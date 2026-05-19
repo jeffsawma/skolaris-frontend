@@ -1,0 +1,187 @@
+﻿@page "/groupes"
+@rendermode InteractiveServer
+@inject HttpClient Http
+
+<h3>Gestion des groupes</h3>
+
+@if (groupes == null)
+{
+    <p>Chargement...</p>
+}
+
+<h5>Ajouter un groupe</h5>
+
+<input @bind="newGroupe.Nom" placeholder="Nom du groupe" />
+
+<select @bind="newGroupe.IdProgramme">
+    <option value="">Choisir un programme</option>
+
+    @if (programmes != null)
+    {
+        @foreach (var p in programmes)
+        {
+            <option value="@p.IdProgramme">@p.Nom</option>
+        }
+    }
+</select>
+
+<button @onclick="Ajouter">Ajouter</button>
+
+<hr />
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Nom</th>
+            <th>Programme</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @if (groupes != null)
+        {
+            @foreach (var g in groupes)
+            {
+                <tr>
+
+                    @if (editId == g.IdGroupe)
+                    {
+                        <td>@g.IdGroupe</td>
+
+                        <td>
+                            <input @bind="editGroupe.Nom" />
+                        </td>
+
+                        <td>
+                            <select @bind="editGroupe.IdProgramme">
+
+                                @if (programmes != null)
+                                {
+                                    @foreach (var p in programmes)
+                                    {
+                                        <option value="@p.IdProgramme">
+                                            @p.Nom
+                                        </option>
+                                    }
+                                }
+
+                            </select>
+                        </td>
+
+                        <td>
+                            <button @onclick="Sauvegarder">Save</button>
+                            <button @onclick="Annuler">Cancel</button>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>@g.IdGroupe</td>
+                        <td>@g.Nom</td>
+                        <td>@g.IdProgramme</td>
+
+                        <td>
+                            <button @onclick="() => Modifier(g)">
+                                Edit
+                            </button>
+
+                            <button @onclick="() => Supprimer(g.IdGroupe)">
+                                Delete
+                            </button>
+                        </td>
+                    }
+
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+
+    List<GroupeDto>? groupes;
+
+    List<Programme>? programmes;
+
+    GroupeDto newGroupe = new();
+
+    GroupeDto editGroupe = new();
+
+    int editId = 0;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        groupes = await Http.GetFromJsonAsync<List<GroupeDto>>("api/Groupes");
+
+        programmes = await Http.GetFromJsonAsync<List<Programme>>("api/Programme");
+    }
+
+    async Task Charger()
+    {
+        groupes = await Http.GetFromJsonAsync<List<GroupeDto>>("api/Groupes");
+    }
+
+    async Task Ajouter()
+    {
+        await Http.PostAsJsonAsync("api/Groupes", newGroupe);
+
+        newGroupe = new GroupeDto();
+
+        await Charger();
+    }
+
+    void Modifier(GroupeDto g)
+    {
+        editId = g.IdGroupe;
+
+        editGroupe = new GroupeDto
+            {
+                IdGroupe = g.IdGroupe,
+                Nom = g.Nom,
+                IdProgramme = g.IdProgramme
+            };
+    }
+
+    // Sauvegarder les modifications du groupe
+    async Task Sauvegarder()
+    {
+        await Http.PutAsJsonAsync(
+            $"api/Groupes/{editId}",
+            editGroupe
+        );
+
+        editId = 0;
+
+        await Charger();
+    }
+
+    void Annuler()
+    {
+        editId = 0;
+    }
+
+    // Supprimer
+    async Task Supprimer(int id)
+    {
+        await Http.DeleteAsync($"api/Groupes/{id}");
+
+        await Charger();
+    }
+
+    public class GroupeDto
+    {
+        public int IdGroupe { get; set; }
+
+        public string Nom { get; set; } = "";
+
+        public int IdProgramme { get; set; }
+    }
+
+    public class Programme
+    {
+        public int IdProgramme { get; set; }
+
+        public string Nom { get; set; } = "";
+    }
+}
