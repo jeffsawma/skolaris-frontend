@@ -47,6 +47,7 @@ else
                                 <th>Cours</th>
                                 <th>Session</th>
                                 <th>Mode d'enseignement</th>
+                                <th>Groupe</th> <!-- Added -->
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -57,6 +58,11 @@ else
                                     <td><strong>@co.NomCours</strong></td>
                                     <td><span class="sk-badge sk-badge-session">@co.NomSession</span></td>
                                     <td><span class="sk-badge sk-badge-mode">@GetModeLabel(co.ModeEnseignement)</span></td>
+
+                                    <td>
+                                        @co.NomGroupe
+                                    </td>
+
                                     <td class="sk-actions">
                                         <button class="sk-btn sk-btn-sm sk-btn-outline" @onclick="() => OpenEdit(co)">Modifier</button>
                                         <button class="sk-btn sk-btn-sm sk-btn-danger"
@@ -338,6 +344,7 @@ else
         public string NomSession { get; set; } = "";
         public int IdProgramme { get; set; }
         public string NomProgramme { get; set; } = "";
+        public string NomGroupe { get; set; } = ""; // Added
     }
 
     public class CoursOffertFormDto

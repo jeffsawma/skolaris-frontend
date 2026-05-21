@@ -1,0 +1,197 @@
+﻿@page "/niveaux"
+@rendermode InteractiveServer
+@inject HttpClient Http
+
+<h3>Gestion des niveaux</h3>
+
+@if (niveaux == null || programmes == null)
+{
+    <p>Chargement...</p>
+}
+else
+{
+    <h5>Ajouter un niveau</h5>
+
+    <input @bind="newNiveau.Nom" placeholder="Nom du niveau" />
+
+    <select @bind="newNiveau.IdProgramme">
+        <option value="">Choisir un programme</option>
+
+        @foreach (var p in programmes)
+        {
+            <option value="@p.IdProgramme">
+                @p.Nom
+            </option>
+        }
+    </select>
+
+    <button @onclick="Ajouter">
+        Ajouter
+    </button>
+
+    <hr />
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Nom</th>
+                <th>Programme</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            @foreach (var n in niveaux)
+            {
+                <tr>
+
+                    @if (editId == n.IdNiveau)
+                    {
+                        <td>@n.IdNiveau</td>
+
+                        <td>
+                            <input @bind="editNiveau.Nom" />
+                        </td>
+
+                        <td>
+                            <select @bind="editNiveau.IdProgramme">
+
+                                @foreach (var p in programmes)
+                                {
+                                    <option value="@p.IdProgramme">
+                                        @p.Nom
+                                    </option>
+                                }
+
+                            </select>
+                        </td>
+
+                        <td>
+                            <button @onclick="Sauvegarder">
+                                Save
+                            </button>
+
+                            <button @onclick="Annuler">
+                                Cancel
+                            </button>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>@n.IdNiveau</td>
+                        <td>@n.Nom</td>
+                        <td>@GetProgrammeNom(n.IdProgramme)</td>
+
+                        <td>
+                            <button @onclick="() => Modifier(n)">
+                                Edit
+                            </button>
+
+                            <button @onclick="() => Supprimer(n.IdNiveau)">
+                                Delete
+                            </button>
+                        </td>
+                    }
+
+                </tr>
+            }
+
+        </tbody>
+    </table>
+}
+
+@code {
+
+    List<NiveauDto>? niveaux;
+
+    List<ProgrammeDto>? programmes;
+
+    NiveauDto newNiveau = new();
+
+    NiveauDto editNiveau = new();
+
+    int editId = -1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Charger();
+    }
+
+    async Task Charger()
+    {
+        niveaux = await Http.GetFromJsonAsync<List<NiveauDto>>("api/Niveau");
+
+        programmes = await Http.GetFromJsonAsync<List<ProgrammeDto>>("api/Programme");
+    }
+
+    async Task Ajouter()
+    {
+        await Http.PostAsJsonAsync("api/Niveau", newNiveau);
+
+        newNiveau = new NiveauDto();
+
+        await Charger();
+    }
+
+    void Modifier(NiveauDto n)
+    {
+        editId = n.IdNiveau;
+
+        editNiveau = new NiveauDto
+        {
+            IdNiveau = n.IdNiveau,
+            Nom = n.Nom,
+            IdProgramme = n.IdProgramme
+        };
+    }
+
+    async Task Sauvegarder()
+    {
+        await Http.PutAsJsonAsync(
+            $"api/Niveau/{editId}",
+            editNiveau
+        );
+
+        editId = -1;
+
+        await Charger();
+    }
+
+    void Annuler()
+    {
+        editId = -1;
+    }
+
+    async Task Supprimer(int id)
+    {
+        await Http.DeleteAsync($"api/Niveau/{id}");
+
+        await Charger();
+    }
+
+    string GetProgrammeNom(int idProgramme)
+    {
+        var programme = programmes?
+            .FirstOrDefault(p => p.IdProgramme == idProgramme);
+
+        return programme?.Nom ?? "";
+    }
+
+    public class NiveauDto
+    {
+        public int IdNiveau { get; set; }
+
+        public string Nom { get; set; } = "";
+
+        public int IdProgramme { get; set; }
+    }
+
+    public class ProgrammeDto
+    {
+        public int IdProgramme { get; set; }
+
+        public string Nom { get; set; } = "";
+    }
+}
