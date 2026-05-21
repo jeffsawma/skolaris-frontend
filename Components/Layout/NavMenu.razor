@@ -84,6 +84,11 @@
             <span>Modération</span>
         </div>
 
+        <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/admin/sms")'>
+            <span class="sk-nav-icon">📱</span>
+            <span>SMS d'urgence</span>
+        </div>
+
     }
     @if (role == "ENSEIGNANT")
     {
