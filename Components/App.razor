@@ -16,7 +16,8 @@
 
 <body>
     <Routes @rendermode="InteractiveServer" />
-    <script src="_framework/blazor.web.js"></script>
+    <script src="/js/inactivity.js"></script>
+    
     <script>
         function scrollToBottom(elementId) {
         var el = document.getElementById(elementId);
@@ -27,6 +28,7 @@
         if (el) el.click();
         }
     </script>
+    <script src="_framework/blazor.web.js"></script>
 </body>
 
 </html>
