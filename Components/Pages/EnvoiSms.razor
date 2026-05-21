@@ -1,0 +1,281 @@
+@page "/admin/sms"
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<div class="sk-dossier-header">
+    <div class="sk-dossier-avatar" style="background:#e65c00;">📱</div>
+    <div>
+        <h2 class="sk-dossier-name">SMS d'urgence</h2>
+        <p class="sk-dossier-sub">Administration — Contacter un ou plusieurs utilisateurs par SMS</p>
+    </div>
+    <div style="margin-left:auto;">
+        <span class="sk-badge sk-badge-danger">URGENCE</span>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="sk-alert sk-alert-success">@successMessage</div>
+}
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="sk-alert sk-alert-danger">@errorMessage</div>
+}
+
+<div style="display:flex; gap:24px; flex-wrap:wrap; margin-top:24px;">
+
+    <!-- Colonne gauche : formulaire d'envoi -->
+    <div style="flex:1; min-width:320px; max-width:520px;">
+
+        <div class="sk-section-title">✉️ Rédiger le message SMS</div>
+        <div class="sk-form-group" style="margin-top:12px;">
+            <label>Message <span style="color:#e65c00;">*</span></label>
+            <textarea class="sk-input" rows="4" maxlength="640"
+                      placeholder="Ex: ⚠️ Fermeture exceptionnelle de l'école . Veuillez contacter l'administration."
+                      @bind="message" @bind:event="oninput" style="resize:vertical;"></textarea>
+            <small style="color: @(message.Length > 500 ? "#e65c00" : "#888");">
+                @message.Length / 640 caractères
+                @if (message.Length > 160)
+                {
+                    <span> (@((int)Math.Ceiling((double)message.Length / 160)) SMS)</span>
+                }
+            </small>
+        </div>
+
+        <div class="sk-section-title" style="margin-top:20px;">📞 Numéros de téléphone destinataires</div>
+        <div class="sk-form-group" style="margin-top:12px;">
+            <label>Un numéro par ligne, format international <span style="color:#e65c00;">*</span></label>
+            <textarea class="sk-input" rows="6" placeholder=" +1 514 000 0000 ;  +1 438 000 0000 " @bind="phonesRaw"
+                      style="font-family:monospace; resize:vertical;"></textarea>
+            <small style="color:#888;">
+                Format requis : +[1][numéro] — ex: <strong>+1 514 000 0000</strong> (Canada)
+            </small>
+        </div>
+
+        <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <button class="sk-btn sk-btn-warning" style="font-size:1rem; padding:10px 24px;"
+                    disabled="@(envoi || string.IsNullOrWhiteSpace(message) || string.IsNullOrWhiteSpace(phonesRaw))"
+                    @onclick="EnvoyerSms">
+                @if (envoi)
+                {
+                    <span>⏳ Envoi en cours...</span>
+                }
+                else
+                {
+                    <span>📱 Envoyer les SMS</span>
+                }
+            </button>
+            <button class="sk-btn sk-btn-outline" @onclick="Reinitialiser">Réinitialiser</button>
+        </div>
+
+        <!-- Résultats d'envoi -->
+        @if (resultats.Count > 0)
+        {
+            <div class="sk-section-title" style="margin-top:28px;">📊 Résultats d'envoi</div>
+            <div class="sk-table-wrapper" style="margin-top:8px;">
+                <table class="sk-table">
+                    <thead>
+                        <tr>
+                            <th>Numéro</th>
+                            <th>Statut</th>
+                            <th>Détail</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in resultats)
+                        {
+                            <tr>
+                                <td style="font-family:monospace;">@r.Telephone</td>
+                                <td>
+                                    @if (r.Success)
+                                    {
+                                        <span class="sk-badge sk-badge-active">✅ Envoyé</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="sk-badge sk-badge-inactive">❌ Échec</span>
+                                    }
+                                </td>
+                                <td style="font-size:0.85rem; color:#888;">@r.Error</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:8px; font-size:0.9rem;">
+                <strong>@resultats.Count(r => r.Success)</strong> envoyé(s) —
+                <strong style="color:#e65c00;">@resultats.Count(r => !r.Success)</strong> échoué(s)
+            </div>
+        }
+    </div>
+
+    <!-- Colonne droite : liste des utilisateurs (référence) -->
+    <div style="flex:1; min-width:280px;">
+        <div class="sk-section-title">👥 Annuaire utilisateurs <small
+            style="font-weight:400; color:#888;">(référence)</small></div>
+            <p style="font-size:0.85rem; color:#888; margin:6px 0 12px;">
+                Utilisez cette liste pour retrouver les utilisateurs et saisir leurs numéros à gauche.
+            </p>
+
+            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+                <button class="sk-btn sk-btn-sm @(filtreRole == "" ? "sk-btn-primary" : "sk-btn-outline")"
+                        @onclick='() => filtreRole = ""'>Tous</button>
+                <button class="sk-btn sk-btn-sm @(filtreRole == "ADMIN" ? "sk-btn-primary" : "sk-btn-outline")"
+                        @onclick='() => filtreRole = "ADMIN"'>Admins</button>
+                <button class="sk-btn sk-btn-sm @(filtreRole == "ENSEIGNANT" ? "sk-btn-primary" : "sk-btn-outline")"
+                        @onclick='() => filtreRole = "ENSEIGNANT"'>Enseignants</button>
+                <button class="sk-btn sk-btn-sm @(filtreRole == "ELEVE" ? "sk-btn-primary" : "sk-btn-outline")"
+                        @onclick='() => filtreRole = "ELEVE"'>Élèves</button>
+            </div>
+
+            @if (!utilisateursCharges)
+            {
+                <div class="sk-loading">Chargement...</div>
+            }
+            else
+            {
+                <div class="sk-table-wrapper" style="max-height:480px; overflow-y:auto;">
+                    <table class="sk-table">
+                        <thead>
+                            <tr>
+                                <th>Nom</th>
+                                <th>Courriel</th>
+                                <th>Rôle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var u in UtilisateursFiltres)
+                            {
+                                <tr>
+                                    <td><strong>@u.Nom</strong></td>
+                                    <td style="font-size:0.85rem;">@u.Email</td>
+                                    <td><span class="sk-badge @GetRoleClass(u.Role)" style="font-size:0.75rem;">@u.Role</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <small style="color:#888;">@UtilisateursFiltres.Count utilisateur(s) affiché(s)</small>
+            }
+        </div>
+    </div>
+
+    <div class="mt-4" style="margin-top:32px;">
+        <button class="sk-btn sk-btn-outline" @onclick='() => Navigation.NavigateTo("/dashboard-admin")'>
+            ← Retour au tableau de bord
+        </button>
+    </div>
+
+@code {
+    private string message = "";
+    private string phonesRaw = "";
+    private string filtreRole = "";
+    private bool envoi = false;
+    private bool utilisateursCharges = false;
+    private string successMessage = "";
+    private string errorMessage = "";
+
+    private List<UtilisateurRef> utilisateurs = new();
+    private List<SmsResultItem> resultats = new();
+
+    private List<UtilisateurRef> UtilisateursFiltres =>
+        string.IsNullOrEmpty(filtreRole)
+            ? utilisateurs
+            : utilisateurs.Where(u => u.Role == filtreRole).ToList();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            utilisateurs = await Http.GetFromJsonAsync<List<UtilisateurRef>>("api/users") ?? new();
+            utilisateursCharges = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task EnvoyerSms()
+    {
+        successMessage = "";
+        errorMessage = "";
+        resultats = new();
+
+        var phones = phonesRaw
+            .Split(new[] { '\n', '\r', ';', ',' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim())
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .Distinct()
+            .ToList();
+
+        if (phones.Count == 0)
+        {
+            errorMessage = "Aucun numéro valide trouvé.";
+            return;
+        }
+
+        var body = new { telephones = phones, message };
+
+        envoi = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/sms/envoyer", body);
+
+            if (response.IsSuccessStatusCode)
+            {
+                resultats = await response.Content.ReadFromJsonAsync<List<SmsResultItem>>() ?? new();
+                int ok = resultats.Count(r => r.Success);
+                int ko = resultats.Count(r => !r.Success);
+                successMessage = $"✅ Envoi terminé : {ok} SMS envoyé(s){(ko > 0 ? $", {ko} échoué(s)" : "")}.";
+            }
+            else
+            {
+                errorMessage = "❌ Erreur : " + await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "❌ Erreur réseau : " + ex.Message;
+        }
+        finally
+        {
+            envoi = false;
+            StateHasChanged();
+        }
+    }
+
+    private void Reinitialiser()
+    {
+        message = "";
+        phonesRaw = "";
+        resultats = new();
+        successMessage = "";
+        errorMessage = "";
+    }
+
+    private string GetRoleClass(string role) => role switch
+    {
+        "ADMIN" => "sk-badge-danger",
+        "ENSEIGNANT" => "sk-badge-info",
+        "ELEVE" => "sk-badge-accent",
+        _ => "sk-badge-info"
+    };
+
+    private class UtilisateurRef
+    {
+        public int Id { get; set; }
+        public string Nom { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Role { get; set; } = "";
+        public bool IsActive { get; set; }
+    }
+
+    private class SmsResultItem
+    {
+        public string Telephone { get; set; } = "";
+        public bool Success { get; set; }
+        public string Error { get; set; } = "";
+    }
+}
