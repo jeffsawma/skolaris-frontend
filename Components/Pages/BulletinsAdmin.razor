@@ -15,12 +15,24 @@
 <div class="sk-card">
     <div class="sk-form-row">
         <div>
-            <label>ID Élève</label>
-            <input type="number" class="form-control" @bind="idEleve" />
+            <label>Élève</label>
+            <select class="form-control" @bind="idEleve">
+                <option value="0">— Sélectionner un élève —</option>
+                @foreach (var e in eleves)
+                {
+                    <option value="@e.IdEleve">@e.Prenom @e.Nom (@e.Matricule)</option>
+                }
+            </select>
         </div>
         <div>
-            <label>ID Session</label>
-            <input type="number" class="form-control" @bind="idSession" />
+            <label>Session</label>
+            <select class="form-control" @bind="idSession">
+                <option value="0">— Sélectionner une session —</option>
+                @foreach (var s in sessions)
+                {
+                    <option value="@s.IdSession">@s.Libelle (@s.AnneeLibelle)</option>
+                }
+            </select>
         </div>
         <div style="align-self:flex-end;">
             <button class="btn btn-primary" @onclick="Generer" disabled="@enCours">
@@ -59,12 +71,24 @@
 <div class="sk-card">
     <div class="sk-form-row">
         <div>
-            <label>ID Groupe</label>
-            <input type="number" class="form-control" @bind="idGroupe" />
+            <label>Groupe</label>
+            <select class="form-control" @bind="idGroupe">
+                <option value="0">— Sélectionner un groupe —</option>
+                @foreach (var g in groupes)
+                {
+                    <option value="@g.Id">@g.Nom</option>
+                }
+            </select>
         </div>
         <div>
-            <label>ID Session</label>
-            <input type="number" class="form-control" @bind="idSessionLot" />
+            <label>Session</label>
+            <select class="form-control" @bind="idSessionLot">
+                <option value="0">— Sélectionner une session —</option>
+                @foreach (var s in sessions)
+                {
+                    <option value="@s.IdSession">@s.Libelle (@s.AnneeLibelle)</option>
+                }
+            </select>
         </div>
         <div style="align-self:flex-end;">
             <button class="btn btn-primary" @onclick="GenererLot" disabled="@enLot">
@@ -118,8 +142,14 @@
 <div class="sk-card">
     <div class="sk-form-row">
         <div>
-            <label>ID Session à verrouiller</label>
-            <input type="number" class="form-control" @bind="idSessionLock" />
+            <label>Session à verrouiller</label>
+            <select class="form-control" @bind="idSessionLock">
+                <option value="0">— Sélectionner une session —</option>
+                @foreach (var s in sessions)
+                {
+                    <option value="@s.IdSession">@s.Libelle (@s.AnneeLibelle)</option>
+                }
+            </select>
         </div>
         <div>
             <label>Date limite (vide = déverrouillé)</label>
@@ -148,6 +178,18 @@
     private int idSession;
     private bool enCours, enEnvoi;
     private BulletinDto? bulletin;
+
+    // Listes pour les menus déroulants
+    private List<EleveDto> eleves = new();
+    private List<SessionDto> sessions = new();
+    private List<GroupeDto> groupes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { eleves = await Http.GetFromJsonAsync<List<EleveDto>>("api/eleves") ?? new(); } catch { eleves = new(); }
+        try { sessions = await Http.GetFromJsonAsync<List<SessionDto>>("api/sessions") ?? new(); } catch { sessions = new(); }
+        try { groupes = await Http.GetFromJsonAsync<List<GroupeDto>>("api/groupes") ?? new(); } catch { groupes = new(); }
+    }
 
     // NOT-08
     private int idGroupe;
@@ -314,5 +356,27 @@
     public class EnvoiResponse
     {
         public string? EmailDestinataire { get; set; }
+    }
+
+    public class EleveDto
+    {
+        public int IdEleve { get; set; }
+        public string Nom { get; set; } = "";
+        public string Prenom { get; set; } = "";
+        public string Matricule { get; set; } = "";
+        public string Email { get; set; } = "";
+    }
+
+    public class SessionDto
+    {
+        public int IdSession { get; set; }
+        public string Libelle { get; set; } = "";
+        public string AnneeLibelle { get; set; } = "";
+    }
+
+    public class GroupeDto
+    {
+        public int Id { get; set; }
+        public string Nom { get; set; } = "";
     }
 }
