@@ -2,118 +2,145 @@
 @rendermode InteractiveServer
 @inject HttpClient Http
 
-<h3>Gestion des groupes</h3>
+<div class="sk-page-header">
+    <h2>Gestion des groupes</h2>
+    <p>Ajouter, modifier ou supprimer les groupes associés aux programmes.</p>
+</div>
 
-@if (groupes == null)
-{
-    <p>Chargement...</p>
-}
+<div class="sk-card">
+    <h5>Ajouter un groupe</h5>
 
-<h5>Ajouter un groupe</h5>
+    <div class="sk-form-row">
+        <input class="form-control"
+               @bind="newGroupe.Nom"
+               placeholder="Nom du groupe" />
 
-<input @bind="newGroupe.Nom" placeholder="Nom du groupe" />
+        <select class="form-select" @bind="newGroupe.IdProgramme">
+            <option value="0">Choisir un programme</option>
 
-<select @bind="newGroupe.IdProgramme">
-    <option value="">Choisir un programme</option>
-
-    @if (programmes != null)
-    {
-        @foreach (var p in programmes)
-        {
-            <option value="@p.IdProgramme">@p.Nom</option>
-        }
-    }
-</select>
-
-<button @onclick="Ajouter">Ajouter</button>
-
-<hr />
-
-<table class="table">
-    <thead>
-        <tr>
-            <th>Id</th>
-            <th>Nom</th>
-            <th>Programme</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        @if (groupes != null)
-        {
-            @foreach (var g in groupes)
+            @if (programmes != null)
             {
-                <tr>
-
-                    @if (editId == g.IdGroupe)
-                    {
-                        <td>@g.IdGroupe</td>
-
-                        <td>
-                            <input @bind="editGroupe.Nom" />
-                        </td>
-
-                        <td>
-                            <select @bind="editGroupe.IdProgramme">
-
-                                @if (programmes != null)
-                                {
-                                    @foreach (var p in programmes)
-                                    {
-                                        <option value="@p.IdProgramme">
-                                            @p.Nom
-                                        </option>
-                                    }
-                                }
-
-                            </select>
-                        </td>
-
-                        <td>
-                            <button @onclick="Sauvegarder">Save</button>
-                            <button @onclick="Annuler">Cancel</button>
-                        </td>
-                    }
-                    else
-                    {
-                        <td>@g.IdGroupe</td>
-                        <td>@g.Nom</td>
-                        <td>@g.IdProgramme</td>
-
-                        <td>
-                            <button @onclick="() => Modifier(g)">
-                                Edit
-                            </button>
-
-                            <button @onclick="() => Supprimer(g.IdGroupe)">
-                                Delete
-                            </button>
-                        </td>
-                    }
-
-                </tr>
+                @foreach (var p in programmes)
+                {
+                    <option value="@p.IdProgramme">@p.Nom</option>
+                }
             }
-        }
-    </tbody>
-</table>
+        </select>
+
+        <button class="btn btn-primary" @onclick="Ajouter">
+            Ajouter
+        </button>
+    </div>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert alert-warning mt-3">
+            @message
+        </div>
+    }
+</div>
+
+<div class="sk-card mt-4">
+    <h5>Liste des groupes</h5>
+
+    @if (groupes == null)
+    {
+        <p>Chargement...</p>
+    }
+    else if (groupes.Count == 0)
+    {
+        <p>Aucun groupe trouvé.</p>
+    }
+    else
+    {
+        <table class="table table-striped table-hover mt-3">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Nom</th>
+                    <th>Programme</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var g in groupes)
+                {
+                    <tr>
+                        @if (editId == g.IdGroupe)
+                        {
+                            <td>@g.IdGroupe</td>
+
+                            <td>
+                                <input class="form-control"
+                                       @bind="editGroupe.Nom" />
+                            </td>
+
+                            <td>
+                                <select class="form-select"
+                                        @bind="editGroupe.IdProgramme">
+                                    @if (programmes != null)
+                                    {
+                                        @foreach (var p in programmes)
+                                        {
+                                            <option value="@p.IdProgramme">
+                                                @p.Nom
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                            </td>
+
+                            <td>
+                                <button class="btn btn-success btn-sm"
+                                        @onclick="Sauvegarder">
+                                    Save
+                                </button>
+
+                                <button class="btn btn-secondary btn-sm ms-2"
+                                        @onclick="Annuler">
+                                    Cancel
+                                </button>
+                            </td>
+                        }
+                        else
+                        {
+                            <td>@g.IdGroupe</td>
+                            <td>@g.Nom</td>
+                            <td>@GetNomProgramme(g.IdProgramme)</td>
+
+                            <td>
+                                <button class="btn btn-warning btn-sm"
+                                        @onclick="() => Modifier(g)">
+                                    Edit
+                                </button>
+
+                                <button class="btn btn-danger btn-sm ms-2"
+                                        @onclick="() => Supprimer(g.IdGroupe)">
+                                    Delete
+                                </button>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
 
 @code {
-
     List<GroupeDto>? groupes;
-
     List<Programme>? programmes;
 
     GroupeDto newGroupe = new();
-
     GroupeDto editGroupe = new();
 
     int editId = -1;
-
+    string message = "";
 
     protected override async Task OnInitializedAsync()
     {
-        groupes = await Http.GetFromJsonAsync<List<GroupeDto>>("api/Groupes");
+        await Charger();
 
         programmes = await Http.GetFromJsonAsync<List<Programme>>("api/Programme");
     }
@@ -125,6 +152,20 @@
 
     async Task Ajouter()
     {
+        message = "";
+
+        if (string.IsNullOrWhiteSpace(newGroupe.Nom))
+        {
+            message = "Le nom du groupe est obligatoire.";
+            return;
+        }
+
+        if (newGroupe.IdProgramme == 0)
+        {
+            message = "Veuillez choisir un programme.";
+            return;
+        }
+
         await Http.PostAsJsonAsync("api/Groupes", newGroupe);
 
         newGroupe = new GroupeDto();
@@ -137,20 +178,30 @@
         editId = g.IdGroupe;
 
         editGroupe = new GroupeDto
-            {
-                IdGroupe = g.IdGroupe,
-                Nom = g.Nom,
-                IdProgramme = g.IdProgramme
-            };
+        {
+            IdGroupe = g.IdGroupe,
+            Nom = g.Nom,
+            IdProgramme = g.IdProgramme
+        };
     }
 
-    // Sauvegarder les modifications du groupe
     async Task Sauvegarder()
     {
-        await Http.PutAsJsonAsync(
-            $"api/Groupes/{editId}",
-            editGroupe
-        );
+        message = "";
+
+        if (string.IsNullOrWhiteSpace(editGroupe.Nom))
+        {
+            message = "Le nom du groupe est obligatoire.";
+            return;
+        }
+
+        if (editGroupe.IdProgramme == 0)
+        {
+            message = "Veuillez choisir un programme.";
+            return;
+        }
+
+        await Http.PutAsJsonAsync($"api/Groupes/{editId}", editGroupe);
 
         editId = -1;
 
@@ -160,14 +211,21 @@
     void Annuler()
     {
         editId = -1;
+        message = "";
     }
 
-    // Supprimer
     async Task Supprimer(int id)
     {
         await Http.DeleteAsync($"api/Groupes/{id}");
 
         await Charger();
+    }
+
+    string GetNomProgramme(int idProgramme)
+    {
+        return programmes?
+            .FirstOrDefault(p => p.IdProgramme == idProgramme)?
+            .Nom ?? "N/A";
     }
 
     public class GroupeDto

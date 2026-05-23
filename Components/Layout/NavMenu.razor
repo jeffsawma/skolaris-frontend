@@ -28,6 +28,11 @@
             <span>Établissements</span>
         </div>
 
+        <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/groupes")'>
+            <span class="sk-nav-icon">🏫</span>
+            <span>Groupes</span>
+        </div>
+
         <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/sessions")'>
             <span class="sk-nav-icon">📅</span>
             <span>Sessions</span>
@@ -62,6 +67,23 @@
             <span class="sk-nav-icon">📄</span>
             <span>Bulletins</span>
         </div>
+
+
+        <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/admin/grilles")'>
+            <span class="sk-nav-icon">📋</span>
+            <span>Grilles d'évaluation</span>
+        </div>
+
+        <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/admin/emploi-du-temps")'>
+            <span class="sk-nav-icon">📅</span>
+            <span>Gestion des horaires</span>
+        </div>
+
+        <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/audit-logs")'>
+            <span class="sk-nav-icon">📜</span>
+            <span>Journaux d'activité</span>
+        </div>
+
 
         <div class="sk-nav-section">Messagerie</div>
 
@@ -103,6 +125,10 @@
             <span class="sk-nav-icon">📊</span>
             <span>Statistiques de classe</span>
         </div>
+        <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/enseignant/emploi-du-temps")'>
+            <span class="sk-nav-icon">📅</span>
+            <span>Mon emploi du temps</span>
+        </div>
 
         <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/enseignant/grilles")'>
             <span class="sk-nav-icon">📋</span>
@@ -119,6 +145,7 @@
                 <span class="sk-nav-badge">@nonLuCount</span>
             }
         </div>
+
     }
 
     @if (role == "ELEVE")
@@ -137,6 +164,10 @@
         <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/eleve/notes")'>
             <span class="sk-nav-icon">📝</span>
             <span>Notes & bulletins</span>
+        </div>
+        <div class="sk-nav-item" @onclick='() => Navigation.NavigateTo("/eleve/emploi-du-temps")'>
+            <span class="sk-nav-icon">📅</span>
+            <span>Mon horaire</span>
         </div>
 
         <div class="sk-nav-section">Messagerie</div>

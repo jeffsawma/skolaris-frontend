@@ -1,12 +1,10 @@
-@* HOR-08 — Emploi du temps — Vue Enseignant *@
 @page "/enseignant/emploi-du-temps"
 @rendermode InteractiveServer
+
 @inject HttpClient Http
 @inject IJSRuntime JS
-@using System.Net.Http.Json
 
-<h3>Mes créneaux</h3>
-<p class="text-muted">Votre emploi du temps personnel.</p>
+<h3>Mon emploi du temps</h3>
 
 @if (creneaux == null)
 {
@@ -14,99 +12,78 @@
 }
 else if (!creneaux.Any())
 {
-    <div class="alert alert-info">Aucun créneau assigné cette semaine.</div>
+    <div class="alert alert-info">Aucun horaire publié pour le moment.</div>
 }
 else
 {
-    @* Résumé *@
-    <div class="d-flex gap-3 mb-3">
-        <div class="card text-center px-3 py-2 border-success">
-            <div class="fs-4 fw-bold text-success">@creneaux.Count</div>
-            <div class="small text-muted">Séances</div>
-        </div>
-        <div class="card text-center px-3 py-2">
-            <div class="fs-4 fw-bold">@TotalHeures</div>
-            <div class="small text-muted">Heures / sem.</div>
-        </div>
-        <div class="card text-center px-3 py-2">
-            <div class="fs-4 fw-bold">@creneaux.Select(c => c.GroupeNom).Distinct().Count()</div>
-            <div class="small text-muted">Groupe(s)</div>
-        </div>
-    </div>
-
-    <div class="table-responsive">
-        <table class="table table-striped table-bordered">
-            <thead class="table-dark">
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Jour</th>
+                <th>Heure</th>
+                <th>Cours</th>
+                <th>Groupe</th>
+                <th>Salle</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in creneaux)
+            {
                 <tr>
-                    <th>Jour</th>
-                    <th>Cours</th>
-                    <th>Groupe</th>
-                    <th>Horaire</th>
-                    <th>Salle</th>
+                    <td>@Jour(c.jourSemaine)</td>
+                    <td>@c.heureDebut - @c.heureFin</td>
+                    <td>@c.coursNom</td>
+                    <td>@c.groupeNom</td>
+                    <td>@c.salle</td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach (var c in creneaux.OrderBy(x => x.JourSemaine).ThenBy(x => TimeSpan.Parse(x.HeureDebut)))
-                {
-                    <tr>
-                        <td><strong>@JourLabel(c.JourSemaine)</strong></td>
-                        <td>@c.CoursNom</td>
-                        <td><span class="badge bg-secondary">@c.GroupeNom</span></td>
-                        <td>@c.HeureDebut – @c.HeureFin</td>
-                        <td>@(c.Salle ?? "—")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+            }
+        </tbody>
+    </table>
 }
 
 @code {
-    private List<CreneauDto>? creneaux;
-
-    private static readonly Dictionary<int, string> Jours = new()
-    {
-        [1] = "Lundi", [2] = "Mardi", [3] = "Mercredi", [4] = "Jeudi", [5] = "Vendredi"
-    };
-    private string JourLabel(int j) => Jours.TryGetValue(j, out var l) ? l : j.ToString();
-
-    private string TotalHeures
-    {
-        get
-        {
-            if (creneaux == null) return "0";
-            double total = 0;
-            foreach (var c in creneaux)
-            {
-                if (TimeSpan.TryParse(c.HeureFin, out var fin) && TimeSpan.TryParse(c.HeureDebut, out var debut))
-                    total += (fin - debut).TotalHours;
-            }
-            return $"{total:0.#}h";
-        }
-    }
+    private List<CreneauEnseignantDto>? creneaux;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Récupérer l'ID de l'enseignant depuis localStorage (mis par le login)
-            var enseignantId = await JS.InvokeAsync<string>("localStorage.getItem", "userId");
-            if (!string.IsNullOrEmpty(enseignantId))
+            var idUtilisateurString = await JS.InvokeAsync<string>("localStorage.getItem", "idUtilisateur");
+
+            if (!int.TryParse(idUtilisateurString, out var idUtilisateur))
             {
-                creneaux = await Http.GetFromJsonAsync<List<CreneauDto>>($"api/Creneaux/enseignant/{enseignantId}") ?? new();
+                creneaux = new();
                 StateHasChanged();
+                return;
             }
+
+            creneaux = await Http.GetFromJsonAsync<List<CreneauEnseignantDto>>(
+                $"api/Creneaux/enseignant/{idUtilisateur}"
+            ) ?? new();
+
+            StateHasChanged();
         }
     }
 
-    public class CreneauDto
+    private string Jour(int jour) => jour switch
     {
-        public int     Id            { get; set; }
-        public string  CoursNom      { get; set; } = "";
-        public string  GroupeNom     { get; set; } = "";
-        public int     JourSemaine   { get; set; }
-        public string  HeureDebut    { get; set; } = "";
-        public string  HeureFin      { get; set; } = "";
-        public string? Salle         { get; set; }
+        0 => "Lundi",
+        1 => "Mardi",
+        2 => "Mercredi",
+        3 => "Jeudi",
+        4 => "Vendredi",
+        5 => "Samedi",
+        _ => "Inconnu"
+    };
+
+    public class CreneauEnseignantDto
+    {
+        public int id { get; set; }
+        public string coursNom { get; set; } = "";
+        public string groupeNom { get; set; } = "";
+        public int jourSemaine { get; set; }
+        public string heureDebut { get; set; } = "";
+        public string heureFin { get; set; } = "";
+        public string? salle { get; set; }
     }
 }
