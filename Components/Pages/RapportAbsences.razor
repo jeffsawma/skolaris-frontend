@@ -1,0 +1,276 @@
+@page "/admin/rapport-absences"
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject System.Text.Json.JsonSerializerOptions JsonOptions
+@using System.Net.Http.Json
+
+<div class="sk-dossier-header">
+    <div class="sk-dossier-avatar">📊</div>
+    <div>
+        <h2 class="sk-dossier-name">Rapport des absences</h2>
+        <p class="sk-dossier-sub">Filtrer par élève, groupe ou cours</p>
+    </div>
+</div>
+
+<div class="sk-section-title" style="margin-top:24px;">Filtres</div>
+<div class="d-flex gap-3 flex-wrap mb-4">
+    <div>
+        <label class="form-label">Élève</label>
+        <select class="form-select" @bind="idEleveFiltre">
+            <option value="0">Tous</option>
+            @foreach (var eleve in eleves)
+            {
+                <option value="@eleve.IdEleve">@eleve.Prenom @eleve.Nom (@eleve.Matricule)</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="form-label">Groupe</label>
+        <select class="form-select" @bind="idGroupeFiltre">
+            <option value="0">Tous</option>
+            @foreach (var groupe in groupes)
+            {
+                <option value="@groupe.Id">@groupe.Nom</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label class="form-label">Cours</label>
+        <select class="form-select" @bind="idCoursFiltre">
+            <option value="0">Tous</option>
+            @foreach (var c in cours)
+            {
+                <option value="@c.IdCoursOffert">@c.NomCours</option>
+            }
+        </select>
+    </div>
+    <div class="d-flex align-items-end gap-2">
+        <button class="sk-btn sk-btn-primary" @onclick="AppliquerFiltres">Rechercher</button>
+        @if (rapport != null && rapport.Any())
+        {
+            <button class="sk-btn sk-btn-outline" @onclick="ExporterCSV">⬇ CSV</button>
+            <button class="sk-btn sk-btn-outline" @onclick="ImprimerPDF">🖨 PDF</button>
+        }
+    </div>
+</div>
+
+@if (rapport != null)
+{
+    <div class="sk-stats-row">
+        <div class="sk-stat-card">
+            <div class="sk-stat-icon">📋</div>
+            <div class="sk-stat-value">@rapport.Count</div>
+            <div class="sk-stat-label">Total</div>
+        </div>
+        <div class="sk-stat-card sk-stat-card-warn">
+            <div class="sk-stat-icon">⏳</div>
+            <div class="sk-stat-value">@rapport.Count(r => r.Statut == "EnAttente")</div>
+            <div class="sk-stat-label">En attente</div>
+        </div>
+        <div class="sk-stat-card sk-stat-card-green">
+            <div class="sk-stat-icon">✅</div>
+            <div class="sk-stat-value">@rapport.Count(r => r.JustificationStatut == "Justifiee")</div>
+            <div class="sk-stat-label">Justifiées</div>
+        </div>
+        <div class="sk-stat-card sk-stat-card-accent">
+            <div class="sk-stat-icon">❌</div>
+            <div class="sk-stat-value">@rapport.Count(r => r.JustificationStatut == "NonJustifiee")</div>
+            <div class="sk-stat-label">Non justifiées</div>
+        </div>
+    </div>
+
+    @if (!rapport.Any())
+    {
+        <div class="sk-empty">Aucune absence trouvée pour ces filtres.</div>
+    }
+    else
+    {
+        <div class="sk-table-wrapper mt-3">
+            <table class="sk-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Élève</th>
+                        <th>Matricule</th>
+                        <th>Cours</th>
+                        <th>Type</th>
+                        <th>Statut</th>
+                        <th>Justification</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in rapport)
+                    {
+                        <tr>
+                            <td>@r.DateAbsence.ToString("yyyy-MM-dd")</td>
+                            <td>@r.EleveNom</td>
+                            <td>@r.EleveMatricule</td>
+                            <td>@r.CoursNom</td>
+                            <td><span class="sk-badge @GetTypeClass(r.Type)">@r.Type</span></td>
+                            <td><span class="sk-badge @GetStatutClass(r.Statut)">@GetStatutLabel(r.Statut)</span></td>
+                            <td><span class="sk-badge @GetJustifClass(r.JustificationStatut)">@GetJustifLabel(r.JustificationStatut)</span></td>
+                            <td>@(r.JustificationDescription ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+<div class="mt-4 no-print">
+    <button class="sk-btn sk-btn-outline" @onclick='() => Navigation.NavigateTo("/admin/absences")'>← Retour</button>
+</div>
+
+<style>
+    @@media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .sk-sidebar {
+            display: none !important;
+        }
+
+        .sk-topbar {
+            display: none !important;
+        }
+
+        .sk-dossier-header {
+            margin-bottom: 12px;
+        }
+
+        .sk-stat-card {
+            border: 1px solid #ccc !important;
+        }
+    }
+</style>
+
+@code {
+    private List<EleveDto> eleves = new();
+    private List<GroupeDto> groupes = new();
+    private List<CoursOffertDto> cours = new();
+    private List<RapportAbsenceDto>? rapport = null;
+
+    private int idEleveFiltre = 0;
+    private int idGroupeFiltre = 0;
+    private int idCoursFiltre = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var elevesTask = Http.GetFromJsonAsync<List<EleveDto>>("api/eleves", JsonOptions);
+        var groupesTask = Http.GetFromJsonAsync<List<GroupeDto>>("api/Groupes", JsonOptions);
+        var coursTask = Http.GetFromJsonAsync<List<CoursOffertDto>>("api/CoursOffert", JsonOptions);
+
+        await Task.WhenAll(elevesTask, groupesTask, coursTask);
+
+        eleves = elevesTask.Result ?? new();
+        groupes = groupesTask.Result ?? new();
+        cours = coursTask.Result ?? new();
+    }
+
+    private async Task AppliquerFiltres()
+    {
+        var url = "api/absences/rapport?";
+        if (idEleveFiltre != 0) url += $"idEleve={idEleveFiltre}&";
+        if (idGroupeFiltre != 0) url += $"idGroupe={idGroupeFiltre}&";
+        if (idCoursFiltre != 0) url += $"idCoursOffert={idCoursFiltre}&";
+
+        rapport = await Http.GetFromJsonAsync<List<RapportAbsenceDto>>(url, JsonOptions) ?? new();
+    }
+
+    private string GetStatutLabel(string statut) => statut switch
+    {
+        "EnAttente" => "En attente",
+        "Approuvee" => "Approuvée",
+        "Refusee" => "Refusée",
+        _ => statut
+    };
+
+    private string GetJustifLabel(string? statut) => statut switch
+    {
+        "Justifiee" => "Justifiée",
+        "NonJustifiee" => "Non justifiée",
+        _ => "—"
+    };
+
+    private string GetStatutClass(string statut) => statut switch
+    {
+        "EnAttente" => "sk-badge-warn",
+        "Approuvee" => "sk-badge-active",
+        "Refusee" => "sk-badge-inactive",
+        _ => "sk-badge-info"
+    };
+
+    private string GetJustifClass(string? statut) => statut switch
+    {
+        "Justifiee" => "sk-badge-active",
+        "NonJustifiee" => "sk-badge-inactive",
+        _ => "sk-badge-warn"
+    };
+
+    private string GetTypeClass(string type) => type switch
+    {
+        "Retard" => "sk-badge-warn",
+        "Maladie" => "sk-badge-accent",
+        _ => "sk-badge-info"
+    };
+
+    private async Task ExporterCSV()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("Date,Eleve,Matricule,Cours,Type,Statut,Justification,Description");
+
+        foreach (var r in rapport!)
+        {
+            var desc = r.JustificationDescription?.Replace(",", " ") ?? "";
+            var nom = r.EleveNom.Replace(",", " ");
+            var cours = r.CoursNom.Replace(",", " ");
+            sb.AppendLine($"{r.DateAbsence:yyyy-MM-dd},{nom},{r.EleveMatricule},{cours},{r.Type},{GetStatutLabel(r.Statut)},{GetJustifLabel(r.JustificationStatut)},{desc}");
+        }
+
+        await JS.InvokeVoidAsync("downloadFile", "rapport-absences.csv", sb.ToString(), "text/csv;charset=utf-8");
+    }
+
+    private async Task ImprimerPDF()
+    {
+        await JS.InvokeVoidAsync("window.print");
+    }
+
+    public class RapportAbsenceDto
+    {
+        public int IdAbsence { get; set; }
+        public DateTime DateAbsence { get; set; }
+        public string Type { get; set; } = "";
+        public string Statut { get; set; } = "";
+        public string EleveNom { get; set; } = "";
+        public string EleveMatricule { get; set; } = "";
+        public string CoursNom { get; set; } = "";
+        public string? JustificationStatut { get; set; }
+        public string? JustificationDescription { get; set; }
+    }
+
+    public class EleveDto
+    {
+        public int IdEleve { get; set; }
+        public string Nom { get; set; } = "";
+        public string Prenom { get; set; } = "";
+        public string Matricule { get; set; } = "";
+    }
+
+    public class GroupeDto
+    {
+        public int Id { get; set; }
+        public string Nom { get; set; } = "";
+    }
+
+    public class CoursOffertDto
+    {
+        public int IdCoursOffert { get; set; }
+        public string ModeEnseignement { get; set; } = "";
+        public string? NomCours { get; set; }
+    }
+}

@@ -150,37 +150,37 @@ else
     {
         "EnAttente" => "En attente",
         "Approuvee" => "Approuvée",
-        "Refusee"   => "Refusée",
-        _           => statut
+        "Refusee" => "Refusée",
+        _ => statut
     };
 
     private string GetStatutClass(string statut) => statut switch
     {
         "EnAttente" => "sk-badge-warn",
         "Approuvee" => "sk-badge-active",
-        "Refusee"   => "sk-badge-inactive",
-        _           => "sk-badge-info"
+        "Refusee" => "sk-badge-inactive",
+        _ => "sk-badge-info"
     };
 
     private string GetJustifLabel(string? statut) => statut switch
     {
-        "Justifiee"    => "Justifiée",
+        "Justifiee" => "Justifiée",
         "NonJustifiee" => "Non justifiée",
-        _              => "—"
+        _ => "—"
     };
 
     private string GetJustifClass(string? statut) => statut switch
     {
-        "Justifiee"    => "sk-badge-active",
+        "Justifiee" => "sk-badge-active",
         "NonJustifiee" => "sk-badge-inactive",
-        _              => "sk-badge-warn"
+        _ => "sk-badge-warn"
     };
 
     private string GetTypeClass(string type) => type switch
     {
-        "Retard"  => "sk-badge-warn",
+        "Retard" => "sk-badge-warn",
         "Maladie" => "sk-badge-accent",
-        _         => "sk-badge-info"
+        _ => "sk-badge-info"
     };
 
     private async Task SupprimerAbsence(int id)

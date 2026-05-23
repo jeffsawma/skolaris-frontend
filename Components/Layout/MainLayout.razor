@@ -2,6 +2,8 @@
 
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject HttpClient Http
+@using System.Net.Http.Json
 
 <div class="sk-layout">
     <aside class="sk-sidebar">
@@ -17,6 +19,42 @@
                 }
             </div>
             <div class="sk-topbar-right">
+                <div class="sk-notif-wrapper">
+                    <button type="button" class="sk-notif-btn" @onclick="ToggleNotifications">
+                        🔔
+                        @if (nonLuCount > 0)
+                        {
+                            <span class="sk-notif-badge">@nonLuCount</span>
+                        }
+                    </button>
+                    @if (showNotifications)
+                    {
+                        <div class="sk-notif-dropdown">
+                            <div class="sk-notif-header">
+                                <span>Notifications</span>
+                                @if (notifications.Any(n => !n.IsLue))
+                                {
+                                    <button class="sk-notif-clear" @onclick="MarquerToutLu">Tout marquer lu</button>
+                                }
+                            </div>
+                            @if (!notifications.Any())
+                            {
+                                <div class="sk-notif-empty">Aucune notification</div>
+                            }
+                            else
+                            {
+                                @foreach (var n in notifications)
+                                {
+                                    <div class="sk-notif-item @(n.IsLue ? "" : "sk-notif-unread")"
+                                         @onclick="() => MarquerLue(n.IdNotification)">
+                                        <div class="sk-notif-message">@n.Message</div>
+                                        <div class="sk-notif-date">@n.DateCreation.ToString("yyyy-MM-dd HH:mm")</div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
                 <button type="button" class="sk-btn-logout" @onclick="Logout">
                     Déconnexion
                 </button>
@@ -29,16 +67,198 @@
     </div>
 </div>
 
+<style>
+    .sk-notif-wrapper {
+        position: relative;
+        display: inline-block;
+        margin-right: 12px;
+    }
+
+    .sk-notif-btn {
+        background: none;
+        border: none;
+        font-size: 20px;
+        cursor: pointer;
+        position: relative;
+        padding: 4px 8px;
+        border-radius: 8px;
+        transition: background 0.2s;
+    }
+
+        .sk-notif-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+    .sk-notif-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        background: #e53935;
+        color: white;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 10px;
+        min-width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+    }
+
+    .sk-notif-dropdown {
+        position: absolute;
+        top: calc(100% + 8px);
+        right: 0;
+        width: 320px;
+        background: #1e2a3a;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        z-index: 1000;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .sk-notif-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        font-weight: 600;
+        font-size: 14px;
+        color: #e3f2fd;
+    }
+
+    .sk-notif-clear {
+        background: none;
+        border: none;
+        color: #64b5f6;
+        font-size: 12px;
+        cursor: pointer;
+        padding: 0;
+    }
+
+        .sk-notif-clear:hover {
+            text-decoration: underline;
+        }
+
+    .sk-notif-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+
+        .sk-notif-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+    .sk-notif-unread {
+        border-left: 3px solid #1976d2;
+        background: rgba(25,118,210,0.08);
+    }
+
+    .sk-notif-message {
+        font-size: 13px;
+        color: #cfd8dc;
+        line-height: 1.4;
+    }
+
+    .sk-notif-date {
+        font-size: 11px;
+        color: #78909c;
+        margin-top: 4px;
+    }
+
+    .sk-notif-empty {
+        padding: 24px;
+        text-align: center;
+        color: #78909c;
+        font-size: 13px;
+    }
+</style>
+
 @code {
     private string nomUtilisateur = "";
+    private int currentUserId = 0;
+    private int nonLuCount = 0;
+    private bool showNotifications = false;
+    private List<NotificationDto> notifications = new();
+    private System.Threading.Timer? _timer;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             nomUtilisateur = await JS.InvokeAsync<string>("localStorage.getItem", "nom") ?? "";
+            var uid = await JS.InvokeAsync<string>("localStorage.getItem", "userId") ?? "0";
+            int.TryParse(uid, out currentUserId);
+            StateHasChanged();
+
+            if (currentUserId > 0)
+            {
+                await RefreshNonLu();
+                _timer = new System.Threading.Timer(async _ =>
+                {
+                    await RefreshNonLu();
+                    await InvokeAsync(StateHasChanged);
+                }, null, 30000, 30000);
+            }
+        }
+    }
+
+    private async Task RefreshNonLu()
+    {
+        try
+        {
+            var result = await Http.GetFromJsonAsync<NonLuResult>($"api/notifications/{currentUserId}/nonlu");
+            nonLuCount = result?.Count ?? 0;
+        }
+        catch { }
+    }
+
+    private async Task ToggleNotifications()
+    {
+        showNotifications = !showNotifications;
+        if (showNotifications)
+            await ChargerNotifications();
+    }
+
+    private async Task ChargerNotifications()
+    {
+        try
+        {
+            notifications = await Http.GetFromJsonAsync<List<NotificationDto>>($"api/notifications/{currentUserId}") ?? new();
+            nonLuCount = notifications.Count(n => !n.IsLue);
+        }
+        catch { }
+    }
+
+    private async Task MarquerLue(int idNotification)
+    {
+        try
+        {
+            await Http.PutAsync($"api/notifications/{idNotification}/lue", null);
+            var notif = notifications.FirstOrDefault(n => n.IdNotification == idNotification);
+            if (notif != null) notif.IsLue = true;
+            nonLuCount = notifications.Count(n => !n.IsLue);
             StateHasChanged();
         }
+        catch { }
+    }
+
+    private async Task MarquerToutLu()
+    {
+        try
+        {
+            await Http.PutAsync($"api/notifications/{currentUserId}/lue-tout", null);
+            notifications.ForEach(n => n.IsLue = true);
+            nonLuCount = 0;
+            StateHasChanged();
+        }
+        catch { }
     }
 
     private async Task Logout()
@@ -47,5 +267,18 @@
         await JS.InvokeVoidAsync("localStorage.removeItem", "nom");
         await JS.InvokeVoidAsync("localStorage.removeItem", "userId");
         Navigation.NavigateTo("/login", true);
+    }
+
+    public class NotificationDto
+    {
+        public int IdNotification { get; set; }
+        public string Message { get; set; } = "";
+        public bool IsLue { get; set; }
+        public DateTime DateCreation { get; set; }
+    }
+
+    private class NonLuResult
+    {
+        public int Count { get; set; }
     }
 }
