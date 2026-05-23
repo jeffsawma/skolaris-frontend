@@ -26,18 +26,24 @@ else
     @foreach (var group in coursOfferts.GroupBy(co => co.IdProgramme).OrderBy(g => g.First().NomProgramme))
     {
         var isOpen = expandedProgrammes.Contains(group.Key);
+
         <div style="margin-bottom:12px;">
-            <div @onclick="() => ToggleProgramme(group.Key)" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;
-                padding:14px 18px; background:var(--sk-surface,#fff);
-                border:1px solid var(--sk-border,#e2e8f0); border-radius:@(isOpen ? "8px 8px 0 0" : "8px");
-                user-select:none;">
+            <div @onclick="() => ToggleProgramme(group.Key)"
+                 style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+                                 padding:14px 18px; background:var(--sk-surface,#fff);
+                                 border:1px solid var(--sk-border,#e2e8f0);
+                                 border-radius:@(isOpen ? "8px 8px 0 0" : "8px");
+                                 user-select:none;">
+
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span style="font-size:1.2em;">📘</span>
                     <strong>@group.First().NomProgramme</strong>
                     <span class="sk-badge">@group.Count() cours</span>
                 </div>
+
                 <span>@(isOpen ? "▲" : "▼")</span>
             </div>
+
             @if (isOpen)
             {
                 <div class="sk-table-wrapper" style="border-radius:0 0 8px 8px; border-top:none;">
@@ -47,26 +53,44 @@ else
                                 <th>Cours</th>
                                 <th>Session</th>
                                 <th>Mode d'enseignement</th>
-                                <th>Groupe</th> <!-- Added -->
+                                <th>Groupe</th>
+                                <th>Enseignant</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             @foreach (var co in group)
                             {
                                 <tr>
                                     <td><strong>@co.NomCours</strong></td>
-                                    <td><span class="sk-badge sk-badge-session">@co.NomSession</span></td>
-                                    <td><span class="sk-badge sk-badge-mode">@GetModeLabel(co.ModeEnseignement)</span></td>
 
                                     <td>
-                                        @co.NomGroupe
+                                        <span class="sk-badge sk-badge-session">
+                                            @co.NomSession
+                                        </span>
                                     </td>
 
+                                    <td>
+                                        <span class="sk-badge sk-badge-mode">
+                                            @GetModeLabel(co.ModeEnseignement)
+                                        </span>
+                                    </td>
+
+                                    <td>@co.NomGroupe</td>
+
+                                    <td>@co.NomEnseignant</td>
+
                                     <td class="sk-actions">
-                                        <button class="sk-btn sk-btn-sm sk-btn-outline" @onclick="() => OpenEdit(co)">Modifier</button>
+                                        <button class="sk-btn sk-btn-sm sk-btn-outline"
+                                                @onclick="() => OpenEdit(co)">
+                                            Modifier
+                                        </button>
+
                                         <button class="sk-btn sk-btn-sm sk-btn-danger"
-                                                @onclick="() => Supprimer(co.IdCoursOffert)">Supprimer</button>
+                                                @onclick="() => Supprimer(co.IdCoursOffert)">
+                                            Supprimer
+                                        </button>
                                     </td>
                                 </tr>
                             }
@@ -78,24 +102,32 @@ else
     }
 }
 
-<!-- Modal Formulaire -->
 @if (showForm)
 {
     <div class="sk-modal-overlay">
         <div class="sk-modal">
+
             <div class="sk-modal-header">
                 <h3>@(editId == null ? "Nouveau cours offert" : "Modifier le cours offert")</h3>
-                <button class="sk-modal-close" @onclick="CloseForm">✕</button>
+
+                <button class="sk-modal-close" @onclick="CloseForm">
+                    ✕
+                </button>
             </div>
+
             <div class="sk-modal-body">
 
                 @if (editId == null)
                 {
-                    <!-- Création : choisir programme → filtre les cours -->
                     <div class="sk-form-group">
                         <label>Programme *</label>
-                        <select class="sk-input" @bind="selectedProgramme" @bind:after="OnProgrammeChanged">
+
+                        <select class="sk-input"
+                                @bind="selectedProgramme"
+                                @bind:after="OnProgrammeChanged">
+
                             <option value="0">— Choisir —</option>
+
                             @foreach (var p in programmes)
                             {
                                 <option value="@p.IdProgramme">@p.Nom</option>
@@ -105,26 +137,74 @@ else
 
                     <div class="sk-form-group">
                         <label>Cours *</label>
+
                         <select class="sk-input" @bind="form.IdCours">
                             <option value="0">— Choisir —</option>
+
                             @foreach (var c in coursFiltres)
                             {
                                 <option value="@c.IdCours">@c.Nom</option>
                             }
                         </select>
+
                         @if (selectedProgramme == 0)
                         {
-                            <small style="color:var(--sk-muted)">Choisissez d'abord un programme</small>
+                            <small style="color:var(--sk-muted)">
+                                Choisissez d'abord un programme
+                            </small>
                         }
                     </div>
 
                     <div class="sk-form-group">
+                        <label>Session *</label>
+
+                        <select class="sk-input" @bind="form.IdSession">
+                            <option value="0">— Choisir —</option>
+
+                            @foreach (var s in sessions)
+                            {
+                                <option value="@s.IdSession">
+                                    @s.Libelle (@s.Type)
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="sk-form-group">
+                        <label>Mode d'enseignement *</label>
+
+                        <select class="sk-input" @bind="form.ModeEnseignement">
+                            <option value="">— Choisir —</option>
+                            <option value="Présentiel">Présentiel</option>
+                            <option value="EnLigne">En ligne</option>
+                            <option value="Hybride">Hybride</option>
+                        </select>
+                    </div>
+
+                    <div class="sk-form-group">
                         <label>Groupe *</label>
+
                         <select class="sk-input" @bind="form.IdGroupe">
                             <option value="0">— Choisir —</option>
+
                             @foreach (var g in groupes)
                             {
-                                <option value="@g.Id">@g.Nom</option>
+                                <option value="@g.IdGroupe">@g.Nom</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="sk-form-group">
+                        <label>Enseignant</label>
+
+                        <select class="sk-input" @bind="form.IdEnseignant">
+                            <option value="">— Choisir —</option>
+
+                            @foreach (var e in enseignants)
+                            {
+                                <option value="@e.IdEnseignant">
+                                    @e.Prenom @e.Nom
+                                </option>
                             }
                         </select>
                     </div>
@@ -133,39 +213,73 @@ else
                 {
                     <div class="sk-form-group">
                         <label>Cours</label>
-                        <input class="sk-input" disabled
+
+                        <input class="sk-input"
+                               disabled
                                value="@coursOfferts!.FirstOrDefault(co => co.IdCoursOffert == editId)?.NomCours" />
                     </div>
+
+                    <div class="sk-form-group">
+                        <label>Session *</label>
+
+                        <select class="sk-input" @bind="form.IdSession">
+                            <option value="0">— Choisir —</option>
+
+                            @foreach (var s in sessions)
+                            {
+                                <option value="@s.IdSession">
+                                    @s.Libelle (@s.Type)
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="sk-form-group">
+                        <label>Mode d'enseignement *</label>
+
+                        <select class="sk-input" @bind="form.ModeEnseignement">
+                            <option value="">— Choisir —</option>
+                            <option value="Présentiel">Présentiel</option>
+                            <option value="EnLigne">En ligne</option>
+                            <option value="Hybride">Hybride</option>
+                        </select>
+                    </div>
+
+                    <div class="sk-form-group">
+                        <label>Groupe</label>
+
+                        <input class="sk-input"
+                               disabled
+                               value="@coursOfferts!.FirstOrDefault(co => co.IdCoursOffert == editId)?.NomGroupe" />
+                    </div>
+
+                    <div class="sk-form-group">
+                        <label>Enseignant</label>
+
+                        <select class="sk-input" @bind="form.IdEnseignant">
+                            <option value="">— Choisir —</option>
+
+                            @foreach (var e in enseignants)
+                            {
+                                <option value="@e.IdEnseignant">
+                                    @e.Prenom @e.Nom
+                                </option>
+                            }
+                        </select>
+                    </div>
                 }
-
-                <div class="sk-form-group">
-                    <label>Session *</label>
-                    <select class="sk-input" @bind="form.IdSession">
-                        <option value="0">— Choisir —</option>
-                        @foreach (var s in sessions)
-                        {
-                            <option value="@s.IdSession">@s.Libelle (@s.Type)</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="sk-form-group">
-                    <label>Mode d'enseignement *</label>
-                    <select class="sk-input" @bind="form.ModeEnseignement">
-                        <option value="">— Choisir —</option>
-                        <option value="Présentiel">Présentiel</option>
-                        <option value="EnLigne">En ligne</option>
-                        <option value="Hybride">Hybride</option>
-                    </select>
-                </div>
 
                 @if (!string.IsNullOrEmpty(formError))
                 {
                     <div class="sk-alert sk-alert-danger">@formError</div>
                 }
             </div>
+
             <div class="sk-modal-footer">
-                <button class="sk-btn sk-btn-outline" @onclick="CloseForm">Annuler</button>
+                <button class="sk-btn sk-btn-outline" @onclick="CloseForm">
+                    Annuler
+                </button>
+
                 <button class="sk-btn sk-btn-primary" @onclick="SaveForm">
                     @(editId == null ? "Créer" : "Enregistrer")
                 </button>
@@ -175,23 +289,29 @@ else
 }
 
 <div class="mt-4">
-    <button class="sk-btn sk-btn-outline" @onclick='() => Navigation.NavigateTo("/dashboard-admin")'>← Retour au tableau
-        de bord</button>
-    </div>
+    <button class="sk-btn sk-btn-outline"
+            @onclick='() => Navigation.NavigateTo("/dashboard-admin")'>
+        ← Retour au tableau de bord
+    </button>
+</div>
 
 @code {
     List<CoursDto> cours = new();
     List<CoursDto> coursFiltres = new();
     List<ProgrammeDto> programmes = new();
     List<GroupeDto> groupes = new();
+    List<EnseignantDto> enseignants = new();
     List<SessionDto> sessions = new();
     List<CoursOffertDto>? coursOfferts;
 
     HashSet<int> expandedProgrammes = new();
+
     bool showForm = false;
     int? editId = null;
     int selectedProgramme = 0;
+
     CoursOffertFormDto form = new();
+
     string message = "";
     bool isError = false;
     string formError = "";
@@ -208,12 +328,16 @@ else
         var t3 = Http.GetFromJsonAsync<List<CoursOffertDto>>("api/CoursOffert");
         var t4 = Http.GetFromJsonAsync<List<ProgrammeDto>>("api/Programme");
         var t5 = Http.GetFromJsonAsync<List<GroupeDto>>("api/Groupes");
-        await Task.WhenAll(t1, t2, t3, t4, t5);
+        var t6 = Http.GetFromJsonAsync<List<EnseignantDto>>("api/Enseignant");
+
+        await Task.WhenAll(t1, t2, t3, t4, t5, t6);
+
         cours = t1.Result ?? new();
         sessions = t2.Result ?? new();
         coursOfferts = t3.Result ?? new();
         programmes = t4.Result ?? new();
         groupes = t5.Result ?? new();
+        enseignants = t6.Result ?? new();
     }
 
     void ToggleProgramme(int id)
@@ -235,13 +359,16 @@ else
     void OpenEdit(CoursOffertDto co)
     {
         editId = co.IdCoursOffert;
+
         form = new CoursOffertFormDto
         {
             IdCours = co.IdCours,
             IdSession = co.IdSession,
             IdGroupe = co.IdGroupe,
+            IdEnseignant = co.IdEnseignant,
             ModeEnseignement = co.ModeEnseignement
         };
+
         formError = "";
         showForm = true;
     }
@@ -257,17 +384,44 @@ else
     async Task SaveForm()
     {
         formError = "";
-        if (form.IdCours == 0) { formError = "Veuillez choisir un cours."; return; }
-        if (form.IdSession == 0) { formError = "Veuillez choisir une session."; return; }
-        if (string.IsNullOrEmpty(form.ModeEnseignement)) { formError = "Veuillez choisir un mode d'enseignement."; return; }
+
+        if (form.IdCours == 0)
+        {
+            formError = "Veuillez choisir un cours.";
+            return;
+        }
+
+        if (form.IdSession == 0)
+        {
+            formError = "Veuillez choisir une session.";
+            return;
+        }
+
+        if (string.IsNullOrEmpty(form.ModeEnseignement))
+        {
+            formError = "Veuillez choisir un mode d'enseignement.";
+            return;
+        }
 
         if (editId == null)
         {
-            if (form.IdGroupe == 0) { formError = "Veuillez choisir un groupe."; return; }
+            if (form.IdGroupe == 0)
+            {
+                formError = "Veuillez choisir un groupe.";
+                return;
+            }
+
             var res = await Http.PostAsJsonAsync("api/CoursOffert", form);
+
             isError = !res.IsSuccessStatusCode;
-            if (isError) { formError = await res.Content.ReadAsStringAsync(); return; }
-            message = "✅ Cours offert créé.";
+
+            if (isError)
+            {
+                formError = await res.Content.ReadAsStringAsync();
+                return;
+            }
+
+            message = "Cours offert créé.";
         }
         else
         {
@@ -277,23 +431,38 @@ else
                 form.IdCours,
                 form.IdSession,
                 form.IdGroupe,
+                form.IdEnseignant,
                 form.ModeEnseignement
             };
+
             var res = await Http.PutAsJsonAsync($"api/CoursOffert/{editId}", payload);
+
             isError = !res.IsSuccessStatusCode;
-            if (isError) { formError = await res.Content.ReadAsStringAsync(); return; }
-            message = "✅ Cours offert mis à jour.";
+
+            if (isError)
+            {
+                formError = await res.Content.ReadAsStringAsync();
+                return;
+            }
+
+            message = "Cours offert mis à jour.";
         }
 
         showForm = false;
+
         await Charger();
     }
 
     async Task Supprimer(int id)
     {
         var res = await Http.DeleteAsync($"api/CoursOffert/{id}");
+
         isError = !res.IsSuccessStatusCode;
-        message = isError ? "Erreur lors de la suppression." : "✅ Cours offert supprimé.";
+
+        message = isError
+            ? "Erreur lors de la suppression."
+            : "Cours offert supprimé.";
+
         await Charger();
     }
 
@@ -320,7 +489,14 @@ else
 
     public class GroupeDto
     {
-        public int Id { get; set; }
+        public int IdGroupe { get; set; }
+        public string Nom { get; set; } = "";
+    }
+
+    public class EnseignantDto
+    {
+        public int IdEnseignant { get; set; }
+        public string Prenom { get; set; } = "";
         public string Nom { get; set; } = "";
     }
 
@@ -339,12 +515,14 @@ else
         public int IdSession { get; set; }
         public int IdGroupe { get; set; }
         public int? IdEnseignant { get; set; }
+
         public string ModeEnseignement { get; set; } = "";
         public string NomCours { get; set; } = "";
         public string NomSession { get; set; } = "";
         public int IdProgramme { get; set; }
         public string NomProgramme { get; set; } = "";
-        public string NomGroupe { get; set; } = ""; // Added
+        public string NomGroupe { get; set; } = "";
+        public string NomEnseignant { get; set; } = "";
     }
 
     public class CoursOffertFormDto
@@ -352,7 +530,7 @@ else
         public int IdCours { get; set; }
         public int IdSession { get; set; }
         public int IdGroupe { get; set; }
-        public int? IdEnseignant { get; set; } = null;
+        public int? IdEnseignant { get; set; }
         public string ModeEnseignement { get; set; } = "";
     }
 }
