@@ -13,12 +13,24 @@
 <div class="sk-card" style="margin-top:16px;">
     <div class="sk-form-row">
         <div>
-            <label>ID Cours offert</label>
-            <input type="number" class="form-control" @bind="idCoursOffert" />
+            <label>Cours offert</label>
+            <select class="form-control" @bind="idCoursOffert">
+                <option value="0">— Sélectionner un cours offert —</option>
+                @foreach (var c in coursOfferts)
+                {
+                    <option value="@c.Id">@c.CoursNom — @c.GroupeNom</option>
+                }
+            </select>
         </div>
         <div>
-            <label>ID Élève</label>
-            <input type="number" class="form-control" @bind="idEleve" />
+            <label>Élève</label>
+            <select class="form-control" @bind="idEleve">
+                <option value="0">— Sélectionner un élève —</option>
+                @foreach (var e in eleves)
+                {
+                    <option value="@e.IdEleve">@e.Prenom @e.Nom (@e.Matricule)</option>
+                }
+            </select>
         </div>
         <div style="align-self:flex-end;">
             <button class="btn btn-primary" @onclick="Charger">Charger</button>
@@ -210,6 +222,16 @@ else if (idEleveCharge != 0 && idCoursOffertCharge != 0)
     private List<NoteDto> notes = new();
     private decimal? noteFinale;
     private GrilleDto? grille;
+
+    // Listes pour les menus déroulants
+    private List<CoursOffertDto> coursOfferts = new();
+    private List<EleveDto> eleves = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { coursOfferts = await Http.GetFromJsonAsync<List<CoursOffertDto>>("api/coursofferts") ?? new(); } catch { coursOfferts = new(); }
+        try { eleves = await Http.GetFromJsonAsync<List<EleveDto>>("api/eleves") ?? new(); } catch { eleves = new(); }
+    }
 
     private NoteCreate newNote = new();
 
@@ -408,5 +430,22 @@ else if (idEleveCharge != 0 && idCoursOffertCharge != 0)
         public int IdCategorie { get; set; }
         public string Nom { get; set; } = "";
         public decimal Ponderation { get; set; }
+    }
+
+    public class CoursOffertDto
+    {
+        public int Id { get; set; }
+        public string CoursNom { get; set; } = "";
+        public string GroupeNom { get; set; } = "";
+        public string EnseignantNom { get; set; } = "";
+    }
+
+    public class EleveDto
+    {
+        public int IdEleve { get; set; }
+        public string Nom { get; set; } = "";
+        public string Prenom { get; set; } = "";
+        public string Matricule { get; set; } = "";
+        public string Email { get; set; } = "";
     }
 }

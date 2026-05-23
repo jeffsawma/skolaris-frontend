@@ -13,8 +13,14 @@
 <div class="sk-card" style="margin-top:16px;">
     <div class="sk-form-row">
         <div>
-            <label>ID Cours offert</label>
-            <input type="number" class="form-control" @bind="idCoursOffert" />
+            <label>Cours offert</label>
+            <select class="form-control" @bind="idCoursOffert">
+                <option value="0">— Sélectionner un cours offert —</option>
+                @foreach (var c in coursOfferts)
+                {
+                    <option value="@c.Id">@c.CoursNom — @c.GroupeNom</option>
+                }
+            </select>
         </div>
         <div style="align-self:flex-end;">
             <button class="btn btn-primary" @onclick="Charger" disabled="@chargement">
@@ -152,9 +158,17 @@
     private string message = "";
     private StatsDto? stats;
 
+    // Liste pour le menu déroulant
+    private List<CoursOffertDto> coursOfferts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { coursOfferts = await Http.GetFromJsonAsync<List<CoursOffertDto>>("api/coursofferts") ?? new(); } catch { coursOfferts = new(); }
+    }
+
     private async Task Charger()
     {
-        if (idCoursOffert <= 0) { message = "Veuillez fournir un ID cours offert valide."; return; }
+        if (idCoursOffert <= 0) { message = "Veuillez sélectionner un cours offert."; return; }
         chargement = true; message = ""; stats = null;
         try
         {
@@ -226,5 +240,13 @@
         public string NomComplet { get; set; } = "";
         public string Matricule { get; set; } = "";
         public decimal? NoteFinale { get; set; }
+    }
+
+    public class CoursOffertDto
+    {
+        public int Id { get; set; }
+        public string CoursNom { get; set; } = "";
+        public string GroupeNom { get; set; } = "";
+        public string EnseignantNom { get; set; } = "";
     }
 }
