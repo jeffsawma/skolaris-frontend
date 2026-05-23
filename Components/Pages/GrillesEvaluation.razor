@@ -1,4 +1,4 @@
-@page "/admin/grilles"
+@page "/enseignant/grilles"
 @rendermode InteractiveServer
 
 @inject HttpClient Http
@@ -14,8 +14,14 @@
 <div class="sk-card" style="margin-top:16px;">
     <div class="sk-form-row">
         <div>
-            <label>ID Cours offert</label>
-            <input type="number" class="form-control" @bind="idCoursOffert" />
+            <label>Cours offert</label>
+            <select class="form-control" @bind="idCoursOffert">
+                <option value="0">— Sélectionner un cours offert —</option>
+                @foreach (var c in coursOfferts)
+                {
+                    <option value="@c.Id">@c.CoursNom — @c.GroupeNom</option>
+                }
+            </select>
         </div>
         <div style="align-self:flex-end;">
             <button class="btn btn-primary" @onclick="Charger">Charger / Vérifier</button>
@@ -141,7 +147,7 @@
 }
 
 <div class="mt-4">
-    <button class="sk-btn sk-btn-outline" @onclick='() => Navigation.NavigateTo("/dashboard-admin")'>
+    <button class="sk-btn sk-btn-outline" @onclick='() => Navigation.NavigateTo("/dashboard-enseignant")'>
         ← Retour au tableau de bord
     </button>
 </div>
@@ -161,9 +167,17 @@
     private bool success = false;
     private string message = "";
 
+    // Liste pour le menu déroulant
+    private List<CoursOffertDto> coursOfferts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { coursOfferts = await Http.GetFromJsonAsync<List<CoursOffertDto>>("api/coursofferts") ?? new(); } catch { coursOfferts = new(); }
+    }
+
     private async Task Charger()
     {
-        if (idCoursOffert <= 0) { Fail("Veuillez fournir un ID cours offert valide."); return; }
+        if (idCoursOffert <= 0) { Fail("Veuillez sélectionner un cours offert."); return; }
         message = "";
         idCoursOffertCharge = idCoursOffert;
         try
@@ -280,5 +294,13 @@
         public int IdCategorie { get; set; }
         public string Nom { get; set; } = "";
         public decimal Ponderation { get; set; }
+    }
+
+    public class CoursOffertDto
+    {
+        public int Id { get; set; }
+        public string CoursNom { get; set; } = "";
+        public string GroupeNom { get; set; } = "";
+        public string EnseignantNom { get; set; } = "";
     }
 }

@@ -51,9 +51,12 @@ else
 
     <div class="sk-section-title" style="margin-top:32px;">Liste des absences</div>
 
-    <div class="mb-3">
+    <div class="mb-3 d-flex justify-content-between">
         <button class="sk-btn sk-btn-primary" @onclick='() => Navigation.NavigateTo("/admin/absences/create")'>
             ➕ Créer une absence
+        </button>
+        <button class="sk-btn sk-btn-accent" @onclick='() => Navigation.NavigateTo("/admin/rapport-absences")'>
+            📊 Rapport des absences
         </button>
     </div>
 
@@ -96,6 +99,17 @@ else
                                 @if (a.Statut != "Refusee")
                                 {
                                     <button class="sk-btn sk-btn-sm sk-btn-warning" @onclick='() => ChangerStatut(a, "Refusee")'>Refuser</button>
+                                }
+                                @if (a.Justification != null)
+                                {
+                                    @if (a.Justification.Statut != "Justifiee")
+                                    {
+                                        <button class="sk-btn sk-btn-sm sk-btn-success" @onclick='() => DeciderJustification(a.IdAbsence, "Justifiee")'>Justifiée</button>
+                                    }
+                                    @if (a.Justification.Statut != "NonJustifiee")
+                                    {
+                                        <button class="sk-btn sk-btn-sm sk-btn-warning" @onclick='() => DeciderJustification(a.IdAbsence, "NonJustifiee")'>Non justifiée</button>
+                                    }
                                 }
                                 <button class="sk-btn sk-btn-sm sk-btn-danger" @onclick="() => SupprimerAbsence(a.IdAbsence)">Supprimer</button>
                             </td>
@@ -168,37 +182,37 @@ else
     {
         "EnAttente" => "En attente",
         "Approuvee" => "Approuvée",
-        "Refusee"   => "Refusée",
-        _           => statut
+        "Refusee" => "Refusée",
+        _ => statut
     };
 
     private string GetStatutClass(string statut) => statut switch
     {
         "EnAttente" => "sk-badge-warn",
         "Approuvee" => "sk-badge-active",
-        "Refusee"   => "sk-badge-inactive",
-        _           => "sk-badge-info"
+        "Refusee" => "sk-badge-inactive",
+        _ => "sk-badge-info"
     };
 
     private string GetJustifLabel(string? statut) => statut switch
     {
-        "Justifiee"    => "Justifiée",
+        "Justifiee" => "Justifiée",
         "NonJustifiee" => "Non justifiée",
-        _              => "—"
+        _ => "—"
     };
 
     private string GetJustifClass(string? statut) => statut switch
     {
-        "Justifiee"    => "sk-badge-active",
+        "Justifiee" => "sk-badge-active",
         "NonJustifiee" => "sk-badge-inactive",
-        _              => "sk-badge-warn"
+        _ => "sk-badge-warn"
     };
 
     private string GetTypeClass(string type) => type switch
     {
-        "Retard"  => "sk-badge-warn",
+        "Retard" => "sk-badge-warn",
         "Maladie" => "sk-badge-accent",
-        _         => "sk-badge-info"
+        _ => "sk-badge-info"
     };
 
     private async Task ChangerStatut(Absence absence, string nouveauStatut)
@@ -217,6 +231,23 @@ else
         if (res.IsSuccessStatusCode)
         {
             message = nouveauStatut == "Approuvee" ? "✅ Absence approuvée." : "✅ Absence refusée.";
+            alertClass = "alert-success";
+            await ChargerDonnees();
+            StateHasChanged();
+        }
+        else
+        {
+            message = $"❌ Erreur : {await res.Content.ReadAsStringAsync()}";
+            alertClass = "alert-danger";
+        }
+    }
+
+    private async Task DeciderJustification(int idAbsence, string statut)
+    {
+        var res = await Http.PostAsJsonAsync($"api/absences/{idAbsence}/justification", new { Statut = statut, Description = (string?)null });
+        if (res.IsSuccessStatusCode)
+        {
+            message = statut == "Justifiee" ? "✅ Absence marquée justifiée." : "✅ Absence marquée non justifiée.";
             alertClass = "alert-success";
             await ChargerDonnees();
             StateHasChanged();
