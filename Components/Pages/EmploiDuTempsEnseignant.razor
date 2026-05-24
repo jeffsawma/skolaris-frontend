@@ -3,6 +3,7 @@
 
 @inject HttpClient Http
 @inject IJSRuntime JS
+@using System.Net.Http.Json
 
 <h3>Mon emploi du temps</h3>
 
@@ -12,12 +13,14 @@
 }
 else if (!creneaux.Any())
 {
-    <div class="alert alert-info">Aucun horaire publié pour le moment.</div>
+    <div class="alert alert-info">
+        Aucun horaire publié pour le moment.
+    </div>
 }
 else
 {
     <table class="table table-bordered table-striped">
-        <thead>
+        <thead class="table-dark">
             <tr>
                 <th>Jour</th>
                 <th>Heure</th>
@@ -26,64 +29,100 @@ else
                 <th>Salle</th>
             </tr>
         </thead>
+
         <tbody>
             @foreach (var c in creneaux)
             {
                 <tr>
-                    <td>@Jour(c.jourSemaine)</td>
-                    <td>@c.heureDebut - @c.heureFin</td>
+                    <td>@c.jourSemaine</td>
+
+                    <td>
+                        @c.heureDebut - @c.heureFin
+                    </td>
+
                     <td>@c.coursNom</td>
+
                     <td>@c.groupeNom</td>
-                    <td>@c.salle</td>
-                </tr>
-            }
+
+                    <td>
+                        @(string.IsNullOrWhiteSpace(c.salle)
+                                        ? "—"
+                                        : c.salle)
+            </td>
+        </tr>
+                }
         </tbody>
     </table>
 }
 
 @code {
+
     private List<CreneauEnseignantDto>? creneaux;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            var idUtilisateurString = await JS.InvokeAsync<string>("localStorage.getItem", "idUtilisateur");
-
-            if (!int.TryParse(idUtilisateurString, out var idUtilisateur))
+            try
             {
-                creneaux = new();
-                StateHasChanged();
-                return;
-            }
+                // Récupère idUtilisateur du localStorage
+                var idUtilisateurString =
+                    await JS.InvokeAsync<string>(
+                        "localStorage.getItem",
+                        "idUtilisateur"
+                    );
 
-            creneaux = await Http.GetFromJsonAsync<List<CreneauEnseignantDto>>(
-                $"api/Creneaux/enseignant/{idUtilisateur}"
-            ) ?? new();
+                // fallback userId
+                if (string.IsNullOrWhiteSpace(idUtilisateurString))
+                {
+                    idUtilisateurString =
+                        await JS.InvokeAsync<string>(
+                            "localStorage.getItem",
+                            "userId"
+                        );
+                }
+
+                // Vérifie si id valide
+                if (!int.TryParse(idUtilisateurString, out var idUtilisateur))
+                {
+                    creneaux = new();
+                    StateHasChanged();
+                    return;
+                }
+
+                // Charge les créneaux
+                creneaux =
+                    await Http.GetFromJsonAsync<List<CreneauEnseignantDto>>(
+                        $"api/Creneaux/enseignant/{idUtilisateur}"
+                    ) ?? new();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+
+                // évite chargement infini
+                creneaux = new();
+            }
 
             StateHasChanged();
         }
     }
 
-    private string Jour(int jour) => jour switch
-    {
-        0 => "Lundi",
-        1 => "Mardi",
-        2 => "Mercredi",
-        3 => "Jeudi",
-        4 => "Vendredi",
-        5 => "Samedi",
-        _ => "Inconnu"
-    };
-
     public class CreneauEnseignantDto
     {
         public int id { get; set; }
+
         public string coursNom { get; set; } = "";
+
         public string groupeNom { get; set; } = "";
-        public int jourSemaine { get; set; }
+
+        // IMPORTANT : string et non int
+        public string jourSemaine { get; set; } = "";
+
         public string heureDebut { get; set; } = "";
+
         public string heureFin { get; set; } = "";
+
         public string? salle { get; set; }
     }
 }
