@@ -3,13 +3,20 @@
 
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@using System.Net.Http.Json
 
 <div class="sk-page-header">
     <h2 class="sk-page-title">Journaux d'activité</h2>
 
-    <button class="sk-btn sk-btn-outline" @onclick="Charger">
-        Rafraîchir
-    </button>
+    <div class="d-flex gap-2">
+        <button class="sk-btn sk-btn-outline" @onclick="Charger">
+            Rafraîchir
+        </button>
+
+        <button class="sk-btn sk-btn-danger" @onclick="ClearLogs">
+            Vider les journaux
+        </button>
+    </div>
 </div>
 
 @if (!string.IsNullOrEmpty(message))
@@ -30,9 +37,7 @@ else if (!logs.Any())
 else
 {
     <div class="sk-table-wrapper">
-
         <table class="sk-table">
-
             <thead>
                 <tr>
                     <th>Date</th>
@@ -41,11 +46,11 @@ else
                     <th>Action</th>
                     <th>Détails</th>
                     <th>IP</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
 
             <tbody>
-
                 @foreach (var log in logs)
                 {
                     <tr>
@@ -62,50 +67,48 @@ else
                         <td>@log.Details</td>
 
                         <td>@(log.IpAddress ?? "—")</td>
+
+                        <td>
+                            <button class="sk-btn sk-btn-danger"
+                                    @onclick="() => DeleteLog(log.Id)">
+                                Supprimer
+                            </button>
+                        </td>
                     </tr>
                 }
-
             </tbody>
-
         </table>
-
     </div>
 }
 
 <div class="mt-4">
-
     <button class="sk-btn sk-btn-outline"
             @onclick='() => Navigation.NavigateTo("/dashboard-admin")'>
-
         ← Retour au tableau de bord
-
     </button>
-
 </div>
 
 @code {
-
     List<AuditLogDto>? logs;
 
     string message = "";
 
     bool isError = false;
 
-    // Chargement automatique de la page
     protected override async Task OnInitializedAsync()
     {
         await Charger();
     }
 
-    // Charger les logs depuis l'API
     async Task Charger()
     {
         try
         {
-            logs = await Http.GetFromJsonAsync<List<AuditLogDto>>("api/audit-logs") ?? new();
+            logs = await Http.GetFromJsonAsync<List<AuditLogDto>>(
+                "api/audit-logs"
+            ) ?? new();
 
             message = "";
-
             isError = false;
         }
         catch (Exception ex)
@@ -113,14 +116,68 @@ else
             logs = new();
 
             isError = true;
-
             message = "Erreur lors du chargement des journaux.";
 
             Console.WriteLine(ex.Message);
         }
     }
 
-    // DTO des logs
+    async Task DeleteLog(int id)
+    {
+        try
+        {
+            var response = await Http.DeleteAsync($"api/audit-logs/{id}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                message = "Journal supprimé.";
+                isError = false;
+
+                await Charger();
+            }
+            else
+            {
+                message = "Erreur lors de la suppression.";
+                isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            message = "Erreur lors de la suppression.";
+            isError = true;
+
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    async Task ClearLogs()
+    {
+        try
+        {
+            var response = await Http.DeleteAsync("api/audit-logs/clear");
+
+            if (response.IsSuccessStatusCode)
+            {
+                message = "Tous les journaux ont été supprimés.";
+                isError = false;
+
+                await Charger();
+            }
+            else
+            {
+                message = "Erreur lors de la suppression des journaux.";
+                isError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            message = "Erreur lors de la suppression des journaux.";
+            isError = true;
+
+            Console.WriteLine(ex.Message);
+        }
+    }
+
     public class AuditLogDto
     {
         public int Id { get; set; }
