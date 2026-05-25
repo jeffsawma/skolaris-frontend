@@ -7,6 +7,10 @@
 
 <h3>Mon emploi du temps</h3>
 
+<p class="text-muted">
+    Vos créneaux de la semaine.
+</p>
+
 @if (creneaux == null)
 {
     <p>Chargement...</p>
@@ -19,45 +23,142 @@ else if (!creneaux.Any())
 }
 else
 {
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
-            <tr>
-                <th>Jour</th>
-                <th>Heure</th>
-                <th>Cours</th>
-                <th>Groupe</th>
-                <th>Salle</th>
-            </tr>
-        </thead>
+    <div class="table-responsive">
+        <table class="table table-bordered mb-0"
+               style="min-width:850px; table-layout:fixed;">
 
-        <tbody>
-            @foreach (var c in creneaux)
-            {
+            <thead>
                 <tr>
-                    <td>@c.jourSemaine</td>
+                    <th style="width:80px;
+                                   background:#0d6efd;
+                                   color:white;">
+                        Heure
+                    </th>
 
-                    <td>
-                        @c.heureDebut - @c.heureFin
-                    </td>
+                    <th style="background:#0d6efd;
+                                   color:white;
+                                   text-align:center;">
+                        Lundi
+                    </th>
 
-                    <td>@c.coursNom</td>
+                    <th style="background:#0d6efd;
+                                   color:white;
+                                   text-align:center;">
+                        Mardi
+                    </th>
 
-                    <td>@c.groupeNom</td>
+                    <th style="background:#0d6efd;
+                                   color:white;
+                                   text-align:center;">
+                        Mercredi
+                    </th>
 
-                    <td>
-                        @(string.IsNullOrWhiteSpace(c.salle)
-                                        ? "—"
-                                        : c.salle)
-            </td>
-        </tr>
+                    <th style="background:#0d6efd;
+                                   color:white;
+                                   text-align:center;">
+                        Jeudi
+                    </th>
+
+                    <th style="background:#0d6efd;
+                                   color:white;
+                                   text-align:center;">
+                        Vendredi
+                    </th>
+
+                    <th style="background:#0d6efd;
+                                   color:white;
+                                   text-align:center;">
+                        Samedi
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                @foreach (var slot in TimeSlots)
+                {
+                    <tr style="height:56px;">
+
+                        <td style="font-size:0.8rem;
+                                           color:#6c757d;
+                                           vertical-align:middle;
+                                           background:#f8f9fa;">
+                            @slot
+                        </td>
+
+                        @for (int j = 0; j < 6; j++)
+                        {
+                            int jour = j;
+                            string s = slot;
+
+                            var cell = creneaux.FirstOrDefault(c =>
+                            c.jourSemaine == JourLabel(jour) &&
+                            string.Compare(c.heureDebut, s) <= 0 &&
+                            string.Compare(c.heureFin, s) > 0);
+
+                            <td style="padding:3px;
+                                                   vertical-align:top;">
+
+                                @if (cell != null &&
+                                                    cell.heureDebut == slot)
+                                {
+                                    <div style="background:#0d6efd;
+                                                                color:white;
+                                                                border-radius:6px;
+                                                                padding:5px 7px;
+                                                                font-size:0.75rem;">
+
+                                        <strong>
+                                            @cell.coursNom
+                                        </strong>
+
+                                        <br />
+
+                                        <span>
+                                            Groupe : @cell.groupeNom
+                                        </span>
+
+                                        <br />
+
+                                        <span>
+                                            @cell.heureDebut - @cell.heureFin
+                                        </span>
+
+                                        @if (!string.IsNullOrWhiteSpace(cell.salle))
+                                        {
+                                            <br />
+
+                                            <span>
+                                                Salle : @cell.salle
+                                            </span>
+                                        }
+
+                                    </div>
+                                }
+
+                            </td>
+                        }
+
+                    </tr>
                 }
-        </tbody>
-    </table>
+
+            </tbody>
+        </table>
+    </div>
 }
 
 @code {
 
     private List<CreneauEnseignantDto>? creneaux;
+
+    private static readonly List<string> TimeSlots = new()
+    {
+        "07:30","08:00","08:30","09:00","09:30","10:00",
+        "10:30","11:00","11:30","12:00","12:30","13:00",
+        "13:30","14:00","14:30","15:00","15:30","16:00",
+        "16:30","17:00","17:30","18:00","18:30","19:00",
+        "19:30","20:00"
+    };
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -65,14 +166,12 @@ else
         {
             try
             {
-                // Récupère idUtilisateur du localStorage
                 var idUtilisateurString =
                     await JS.InvokeAsync<string>(
                         "localStorage.getItem",
                         "idUtilisateur"
                     );
 
-                // fallback userId
                 if (string.IsNullOrWhiteSpace(idUtilisateurString))
                 {
                     idUtilisateurString =
@@ -82,15 +181,14 @@ else
                         );
                 }
 
-                // Vérifie si id valide
-                if (!int.TryParse(idUtilisateurString, out var idUtilisateur))
+                if (!int.TryParse(idUtilisateurString,
+                    out var idUtilisateur))
                 {
                     creneaux = new();
                     StateHasChanged();
                     return;
                 }
 
-                // Charge les créneaux
                 creneaux =
                     await Http.GetFromJsonAsync<List<CreneauEnseignantDto>>(
                         $"api/Creneaux/enseignant/{idUtilisateur}"
@@ -100,12 +198,25 @@ else
             {
                 Console.WriteLine(ex.Message);
 
-                // évite chargement infini
                 creneaux = new();
             }
 
             StateHasChanged();
         }
+    }
+
+    private string JourLabel(int j)
+    {
+        return j switch
+        {
+            0 => "Lundi",
+            1 => "Mardi",
+            2 => "Mercredi",
+            3 => "Jeudi",
+            4 => "Vendredi",
+            5 => "Samedi",
+            _ => ""
+        };
     }
 
     public class CreneauEnseignantDto
@@ -116,7 +227,6 @@ else
 
         public string groupeNom { get; set; } = "";
 
-        // IMPORTANT : string et non int
         public string jourSemaine { get; set; } = "";
 
         public string heureDebut { get; set; } = "";
