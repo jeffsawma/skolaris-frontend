@@ -76,7 +76,7 @@
                 <option value="0">— Sélectionner un groupe —</option>
                 @foreach (var g in groupes)
                 {
-                    <option value="@g.Id">@g.Nom</option>
+                    <option value="@g.IdGroupe">@g.Nom</option>
                 }
             </select>
         </div>
@@ -376,7 +376,7 @@
 
     public class GroupeDto
     {
-        public int Id { get; set; }
+        public int IdGroupe { get; set; }
         public string Nom { get; set; } = "";
     }
 }
