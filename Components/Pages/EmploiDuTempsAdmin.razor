@@ -12,7 +12,7 @@
             <option value="-1">Tous</option>
             @foreach (var g in groupes)
             {
-                <option value="@g.Id">@g.Nom</option>
+                <option value="@g.IdGroupe">@g.Nom</option>
             }
         </select>
     </div>
@@ -397,25 +397,13 @@ else
         };
     }
 
-    private void ShowGrid()
-    {
-        viewMode = "grid";
-    }
+    private void ShowGrid() => viewMode = "grid";
 
-    private void ShowList()
-    {
-        viewMode = "list";
-    }
+    private void ShowList() => viewMode = "list";
 
-    private void ClearSuccess()
-    {
-        successMessage = "";
-    }
+    private void ClearSuccess() => successMessage = "";
 
-    private void CancelDelete()
-    {
-        deletingCreneau = null;
-    }
+    private void CancelDelete() => deletingCreneau = null;
 
     private void OnHeureDebutChanged(ChangeEventArgs e)
     {
@@ -492,13 +480,9 @@ else
             HttpResponseMessage res;
 
             if (editing.Id == 0)
-            {
                 res = await Http.PostAsJsonAsync("api/Creneaux", editing);
-            }
             else
-            {
                 res = await Http.PutAsJsonAsync("api/Creneaux/" + editing.Id, editing);
-            }
 
             if (res.IsSuccessStatusCode)
             {
@@ -595,9 +579,7 @@ else
         public string GroupeNom { get; set; } = "";
         public int GroupeId { get; set; }
         public string EnseignantNom { get; set; } = "";
-
         public string JourSemaine { get; set; } = "";
-
         public string HeureDebut { get; set; } = "";
         public string HeureFin { get; set; } = "";
         public string? Salle { get; set; }
@@ -624,7 +606,7 @@ else
 
     public class GroupeDto
     {
-        public int Id { get; set; }
+        public int IdGroupe { get; set; }
         public string Nom { get; set; } = "";
     }
 
