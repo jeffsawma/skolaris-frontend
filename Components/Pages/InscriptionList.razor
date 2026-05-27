@@ -15,73 +15,32 @@
 else
 {
     <div class="sk-dossier-header">
-
-        <div class="sk-dossier-avatar">
-            📝
-        </div>
+        <div class="sk-dossier-avatar">📝</div>
 
         <div>
-            <h2 class="sk-dossier-name">
-                Gestion des inscriptions
-            </h2>
-
-            <p class="sk-dossier-sub">
-                Administration — Inscriptions aux cours
-            </p>
+            <h2 class="sk-dossier-name">Gestion des inscriptions</h2>
+            <p class="sk-dossier-sub">Administration — Inscriptions aux cours</p>
         </div>
-
     </div>
 
     <div class="sk-stats-row">
-
         <div class="sk-stat-card">
-
-            <div class="sk-stat-icon">
-                📝
-            </div>
-
-            <div class="sk-stat-value">
-                @inscriptions.Count
-            </div>
-
-            <div class="sk-stat-label">
-                Total inscriptions
-            </div>
-
+            <div class="sk-stat-icon">📝</div>
+            <div class="sk-stat-value">@inscriptions.Count</div>
+            <div class="sk-stat-label">Total inscriptions</div>
         </div>
 
         <div class="sk-stat-card sk-stat-card-blue">
-
-            <div class="sk-stat-icon">
-                🎓
-            </div>
-
-            <div class="sk-stat-value">
-                @inscriptions.Select(i => i.IdEleve).Distinct().Count()
-            </div>
-
-            <div class="sk-stat-label">
-                Élèves inscrits
-            </div>
-
+            <div class="sk-stat-icon">🎓</div>
+            <div class="sk-stat-value">@inscriptions.Select(i => i.IdEleve).Distinct().Count()</div>
+            <div class="sk-stat-label">Élèves inscrits</div>
         </div>
 
         <div class="sk-stat-card sk-stat-card-accent">
-
-            <div class="sk-stat-icon">
-                📚
-            </div>
-
-            <div class="sk-stat-value">
-                @inscriptions.Select(i => i.IdCoursOffert).Distinct().Count()
-            </div>
-
-            <div class="sk-stat-label">
-                Cours concernés
-            </div>
-
+            <div class="sk-stat-icon">📚</div>
+            <div class="sk-stat-value">@inscriptions.Select(i => i.IdCoursOffert).Distinct().Count()</div>
+            <div class="sk-stat-label">Cours concernés</div>
         </div>
-
     </div>
 
     @if (!string.IsNullOrEmpty(message))
@@ -96,44 +55,31 @@ else
     </h3>
 
     <div class="sk-toolbar"
-         style="margin-bottom:20px;
-                    display:flex;
-                    gap:16px;
-                    align-items:end;
-                    flex-wrap:wrap;">
+         style="margin-bottom:20px; display:flex; gap:16px; align-items:end; flex-wrap:wrap;">
 
         <div style="display:flex; gap:12px; flex-wrap:wrap;">
-
             <button class="sk-btn sk-btn-primary"
                     @onclick='() => Navigation.NavigateTo("/inscriptions/create")'>
                 ➕ Nouvelle inscription
             </button>
 
-            <button class="sk-btn sk-btn-outline"
-                    @onclick="ExporterCsv">
+            <button class="sk-btn sk-btn-outline" @onclick="ExporterCsv">
                 📥 Export CSV
             </button>
 
-            <button class="sk-btn sk-btn-outline"
-                    @onclick="ExporterPdf">
+            <button class="sk-btn sk-btn-outline" @onclick="ExporterPdf">
                 🖨️ Export PDF
             </button>
-
         </div>
 
         <div class="sk-form-group">
-
-            <label>
-                Filtrer par élève
-            </label>
+            <label>Filtrer par élève</label>
 
             <select class="sk-input"
                     @bind="filtreEleveId"
                     @bind:after="AppliquerFiltres">
 
-                <option value="0">
-                    Tous
-                </option>
+                <option value="0">Tous</option>
 
                 @foreach (var e in eleves)
                 {
@@ -141,24 +87,17 @@ else
                         @e.Prenom @e.Nom (@e.Matricule)
                     </option>
                 }
-
             </select>
-
         </div>
 
         <div class="sk-form-group">
-
-            <label>
-                Filtrer par cours
-            </label>
+            <label>Filtrer par cours</label>
 
             <select class="sk-input"
                     @bind="filtreCoursId"
                     @bind:after="AppliquerFiltres">
 
-                <option value="0">
-                    Tous
-                </option>
+                <option value="0">Tous</option>
 
                 @foreach (var c in coursOfferts)
                 {
@@ -168,11 +107,8 @@ else
                                         : $"{c.NomCours} - {c.NomGroupe} - {c.NomSession}")
             </option>
                         }
-
             </select>
-
         </div>
-
     </div>
 
     @if (!inscriptionsFiltrees.Any())
@@ -184,86 +120,119 @@ else
     else
     {
         <div class="sk-table-wrapper">
-
             <table class="sk-table" style="width:100%;">
-
                 <thead>
-
                     <tr>
                         <th>Date</th>
                         <th>Élève</th>
                         <th>Cours offert</th>
                         <th>Actions</th>
                     </tr>
-
                 </thead>
 
                 <tbody>
-
                     @foreach (var i in inscriptionsFiltrees.OrderByDescending(i => i.DateInscription))
                     {
                         <tr>
+                            @if (editId == i.IdInscription)
+                            {
+                                <td>
+                                    @i.DateInscription.ToString("yyyy-MM-dd")
+                                </td>
 
-                            <td>
-                                @i.DateInscription.ToString("yyyy-MM-dd")
-                            </td>
+                                <td>
+                                    <select class="sk-input" @bind="editInscription.IdEleve">
+                                        <option value="0">— Sélectionner un élève —</option>
 
-                            <td>
-                                @GetEleveLabel(i.IdEleve)
-                            </td>
+                                        @foreach (var e in eleves)
+                                        {
+                                            <option value="@e.IdEleve">
+                                                @e.Prenom @e.Nom (@e.Matricule)
+                                            </option>
+                                        }
+                                    </select>
+                                </td>
 
-                            <td>
-                                @GetCoursLabel(i.IdCoursOffert)
-                            </td>
+                                <td>
+                                    <select class="sk-input" @bind="editInscription.IdCoursOffert">
+                                        <option value="0">— Sélectionner un cours —</option>
 
-                            <td class="sk-actions">
+                                        @foreach (var c in coursOfferts)
+                                        {
+                                            <option value="@c.IdCoursOffert">
+                                                @(string.IsNullOrEmpty(c.NomCours)
+                                                                            ? $"Cours #{c.IdCoursOffert}"
+                                                                            : $"{c.NomCours} - {c.NomGroupe} - {c.NomSession}")
+                        </option>
+                                                }
+                                    </select>
+                                </td>
 
-                                <button class="sk-btn sk-btn-sm sk-btn-danger"
-                                        @onclick="() => DeleteInscription(i.IdInscription)">
-                                    Supprimer
-                                </button>
+                                <td class="sk-actions">
+                                    <button class="sk-btn sk-btn-sm sk-btn-primary" @onclick="SaveEdit">
+                                        Enregistrer
+                                    </button>
 
-                            </td>
+                                    <button class="sk-btn sk-btn-sm sk-btn-outline" @onclick="CancelEdit">
+                                        Annuler
+                                    </button>
+                                </td>
+                            }
+                            else
+                            {
+                                <td>
+                                    @i.DateInscription.ToString("yyyy-MM-dd")
+                                </td>
 
+                                <td>
+                                    @GetEleveLabel(i.IdEleve)
+                                </td>
+
+                                <td>
+                                    @GetCoursLabel(i.IdCoursOffert)
+                                </td>
+
+                                <td class="sk-actions">
+                                    <button class="sk-btn sk-btn-sm sk-btn-outline"
+                                            @onclick="() => OpenEdit(i)">
+                                        Modifier
+                                    </button>
+
+                                    <button class="sk-btn sk-btn-sm sk-btn-danger"
+                                            @onclick="() => DeleteInscription(i.IdInscription)">
+                                        Supprimer
+                                    </button>
+                                </td>
+                            }
                         </tr>
                     }
-
                 </tbody>
-
             </table>
-
         </div>
     }
 }
 
 <div class="mt-4">
-
     <button class="sk-btn sk-btn-outline"
             @onclick='() => Navigation.NavigateTo("/dashboard-admin")'>
-
         ← Retour au tableau de bord
-
     </button>
-
 </div>
 
 @code {
-
     private List<Inscription> inscriptions = new();
-
     private List<Inscription> inscriptionsFiltrees = new();
-
     private List<EleveDto> eleves = new();
-
     private List<CoursOffertDto> coursOfferts = new();
 
     private string message = "";
-
     private bool loaded = false;
 
     private int filtreEleveId = 0;
-
     private int filtreCoursId = 0;
+
+    private int editId = 0;
+    private Inscription editInscription = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -285,33 +254,20 @@ else
     {
         try
         {
-            var inscriptionsTask =
-                Http.GetFromJsonAsync<List<Inscription>>("api/inscriptions");
+            var inscriptionsTask = Http.GetFromJsonAsync<List<Inscription>>("api/inscriptions");
+            var elevesTask = Http.GetFromJsonAsync<List<EleveDto>>("api/eleves");
+            var coursTask = Http.GetFromJsonAsync<List<CoursOffertDto>>("api/CoursOffert");
 
-            var elevesTask =
-                Http.GetFromJsonAsync<List<EleveDto>>("api/eleves");
-
-            var coursTask =
-                Http.GetFromJsonAsync<List<CoursOffertDto>>("api/CoursOffert");
-
-            await Task.WhenAll(
-                inscriptionsTask,
-                elevesTask,
-                coursTask
-            );
+            await Task.WhenAll(inscriptionsTask, elevesTask, coursTask);
 
             inscriptions = inscriptionsTask.Result ?? new();
-
             eleves = elevesTask.Result ?? new();
-
             coursOfferts = coursTask.Result ?? new();
         }
         catch
         {
             inscriptions = new();
-
             eleves = new();
-
             coursOfferts = new();
         }
 
@@ -321,19 +277,14 @@ else
     private void AppliquerFiltres()
     {
         inscriptionsFiltrees = inscriptions
-            .Where(i =>
-                filtreEleveId == 0 ||
-                i.IdEleve == filtreEleveId)
-            .Where(i =>
-                filtreCoursId == 0 ||
-                i.IdCoursOffert == filtreCoursId)
+            .Where(i => filtreEleveId == 0 || i.IdEleve == filtreEleveId)
+            .Where(i => filtreCoursId == 0 || i.IdCoursOffert == filtreCoursId)
             .ToList();
     }
 
     private string GetEleveLabel(int idEleve)
     {
-        var e =
-            eleves.FirstOrDefault(x => x.IdEleve == idEleve);
+        var e = eleves.FirstOrDefault(x => x.IdEleve == idEleve);
 
         return e == null
             ? $"#{idEleve}"
@@ -342,33 +293,71 @@ else
 
     private string GetCoursLabel(int idCoursOffert)
     {
-        var c =
-            coursOfferts.FirstOrDefault(
-                x => x.IdCoursOffert == idCoursOffert
-            );
+        var c = coursOfferts.FirstOrDefault(x => x.IdCoursOffert == idCoursOffert);
 
         if (c == null)
             return $"Cours #{idCoursOffert}";
 
-        return
-            $"{c.NomCours} - {c.NomGroupe} - {c.NomSession}";
+        return $"{c.NomCours} - {c.NomGroupe} - {c.NomSession}";
+    }
+
+    private void OpenEdit(Inscription inscription)
+    {
+        editId = inscription.IdInscription;
+
+        editInscription = new Inscription
+        {
+            IdInscription = inscription.IdInscription,
+            IdEleve = inscription.IdEleve,
+            IdCoursOffert = inscription.IdCoursOffert,
+            DateInscription = inscription.DateInscription
+        };
+    }
+
+    private void CancelEdit()
+    {
+        editId = 0;
+        editInscription = new Inscription();
+    }
+
+    private async Task SaveEdit()
+    {
+        if (editInscription.IdEleve == 0 || editInscription.IdCoursOffert == 0)
+        {
+            message = "❌ Veuillez sélectionner un élève et un cours.";
+            return;
+        }
+
+        var res = await Http.PutAsJsonAsync(
+            $"api/inscriptions/{editId}",
+            editInscription
+        );
+
+        if (res.IsSuccessStatusCode)
+        {
+            message = "✅ Inscription modifiée.";
+            editId = 0;
+            editInscription = new Inscription();
+
+            await ChargerDonnees();
+        }
+        else
+        {
+            message = $"❌ Erreur modification : {await res.Content.ReadAsStringAsync()}";
+        }
     }
 
     private async Task DeleteInscription(int id)
     {
-        bool confirmation =
-            await JS.InvokeAsync<bool>(
-                "confirm",
-                "Supprimer cette inscription ?"
-            );
+        bool confirmation = await JS.InvokeAsync<bool>(
+            "confirm",
+            "Supprimer cette inscription ?"
+        );
 
         if (!confirmation)
             return;
 
-        var res =
-            await Http.DeleteAsync(
-                $"api/inscriptions/{id}"
-            );
+        var res = await Http.DeleteAsync($"api/inscriptions/{id}");
 
         if (res.IsSuccessStatusCode)
         {
@@ -395,26 +384,15 @@ else
 
         foreach (var i in inscriptionsFiltrees)
         {
-            var eleve =
-                GetEleveLabel(i.IdEleve)
-                    .Replace(",", " ");
+            var eleve = GetEleveLabel(i.IdEleve).Replace(",", " ");
+            var cours = GetCoursLabel(i.IdCoursOffert).Replace(",", " ");
 
-            var cours =
-                GetCoursLabel(i.IdCoursOffert)
-                    .Replace(",", " ");
-
-            lignes.Add(
-                $"{i.DateInscription:yyyy-MM-dd},{eleve},{cours}"
-            );
+            lignes.Add($"{i.DateInscription:yyyy-MM-dd},{eleve},{cours}");
         }
 
         var csv = string.Join("\n", lignes);
-
-        var bytes =
-            System.Text.Encoding.UTF8.GetBytes(csv);
-
-        var base64 =
-            Convert.ToBase64String(bytes);
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv);
+        var base64 = Convert.ToBase64String(bytes);
 
         await JS.InvokeVoidAsync(
             "downloadFile",
@@ -432,35 +410,25 @@ else
     public class Inscription
     {
         public int IdInscription { get; set; }
-
         public int IdEleve { get; set; }
-
         public int IdCoursOffert { get; set; }
-
         public DateTime DateInscription { get; set; }
     }
 
     public class EleveDto
     {
         public int IdEleve { get; set; }
-
         public string Matricule { get; set; } = "";
-
         public string Nom { get; set; } = "";
-
         public string Prenom { get; set; } = "";
     }
 
     public class CoursOffertDto
     {
         public int IdCoursOffert { get; set; }
-
         public string? NomCours { get; set; }
-
         public string NomGroupe { get; set; } = "";
-
         public string NomSession { get; set; } = "";
-
         public string ModeEnseignement { get; set; } = "";
     }
 }
