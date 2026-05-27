@@ -31,8 +31,7 @@
         <div class="sk-section-title">✉️ Rédiger le message SMS</div>
         <div class="sk-form-group" style="margin-top:12px;">
             <label>Message <span style="color:#e65c00;">*</span></label>
-            <textarea class="sk-input" rows="4" maxlength="640"
-                      placeholder="Ex: ⚠️ Fermeture exceptionnelle de l'école . Veuillez contacter l'administration."
+            <textarea class="sk-input" rows="4" maxlength="640" placeholder="Saisir le message à envoyer !"
                       @bind="message" @bind:event="oninput" style="resize:vertical;"></textarea>
             <small style="color: @(message.Length > 500 ? "#e65c00" : "#888");">
                 @message.Length / 640 caractères
@@ -49,9 +48,9 @@
         </p>
         <div class="sk-form-group" style="margin-top:4px;">
             <label>Un numéro par ligne, format international <span style="color:#e65c00;">*</span></label>
-            <textarea class="sk-input" rows="7" placeholder="+1 514 000 0000&#10;+1 438 000 0000"
-                      @bind="phonesRaw" @bind:event="oninput"
-                      style="font-family:monospace; resize:vertical;"></textarea>
+            <textarea class="sk-input" rows="7"
+                      placeholder="Saisir les numéros de téléphone ou utiliser les filtres à droite !" @bind="phonesRaw"
+                      @bind:event="oninput" style="font-family:monospace; resize:vertical;"></textarea>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
                 <small style="color:#888;">Format: <strong>+1 514 000 0000</strong></small>
                 @if (!string.IsNullOrWhiteSpace(phonesRaw))
@@ -123,19 +122,22 @@
     <div style="flex:1; min-width:300px;">
         <div class="sk-section-title">👥 Annuaire &amp; numéros</div>
         <p style="font-size:0.85rem; color:#888; margin:6px 0 12px;">
-            Cliquez sur un filtre pour <strong>remplacer</strong> les destinataires par ce groupe. Modifiez les numéros directement dans la liste.
+            Cliquez sur un filtre pour <strong>remplacer</strong> les destinataires par ce groupe. Modifiez les numéros
+            directement dans la liste.
         </p>
 
         <!-- Filtres / ajout rapide -->
         <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-            <button class="sk-btn sk-btn-sm @(filtreRole == "" && filtreGroupeId == null ? "sk-btn-primary" : "sk-btn-outline")"
-                    @onclick='() => AppliquerFiltre("")'>Tous</button>
+            <button
+            class="sk-btn sk-btn-sm @(filtreRole == "" && filtreGroupeId == null ? "sk-btn-primary" : "sk-btn-outline")"
+            @onclick='() => AppliquerFiltre("")'>Tous</button>
             <button class="sk-btn sk-btn-sm @(filtreRole == "ADMIN" ? "sk-btn-primary" : "sk-btn-outline")"
                     @onclick='() => AppliquerFiltre("ADMIN")'>Admins</button>
             <button class="sk-btn sk-btn-sm @(filtreRole == "ENSEIGNANT" ? "sk-btn-primary" : "sk-btn-outline")"
                     @onclick='() => AppliquerFiltre("ENSEIGNANT")'>Enseignants</button>
-            <button class="sk-btn sk-btn-sm @(filtreRole == "ELEVE" && filtreGroupeId == null ? "sk-btn-primary" : "sk-btn-outline")"
-                    @onclick='() => AppliquerFiltre("ELEVE")'>Élèves</button>
+            <button
+            class="sk-btn sk-btn-sm @(filtreRole == "ELEVE" && filtreGroupeId == null ? "sk-btn-primary" : "sk-btn-outline")"
+            @onclick='() => AppliquerFiltre("ELEVE")'>Élèves</button>
             <button class="sk-btn sk-btn-sm @(filtreGroupeId != null ? "sk-btn-primary" : "")"
                     style="@(filtreGroupeId == null ? "background:#fff; border:2px solid #ccc; color:#333;" : "")"
                     @onclick="MontrerGroupeSelect">👨‍🎓 Groupe élèves</button>
@@ -144,8 +146,7 @@
         @if (showGroupeSelect)
         {
             <div style="margin-bottom:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                <select class="sk-input" style="max-width:220px; padding:6px 10px;"
-                        @onchange="OnGroupeChange">
+                <select class="sk-input" style="max-width:220px; padding:6px 10px;" @onchange="OnGroupeChange">
                     <option value="">-- Sélectionner un groupe --</option>
                     @foreach (var g in groupes)
                     {
@@ -213,8 +214,7 @@
                                     else
                                     {
                                         <button class="sk-btn sk-btn-sm sk-btn-outline" style="padding:2px 8px;"
-                                                title="Modifier le numéro"
-                                                @onclick="() => DemarrerEditTel(u)">✏️</button>
+                                                title="Modifier le numéro" @onclick="() => DemarrerEditTel(u)">✏️</button>
                                         @if (!string.IsNullOrEmpty(u.Telephone))
                                         {
                                             <button class="sk-btn sk-btn-sm sk-btn-outline" style="padding:2px 6px; margin-left:2px;"
