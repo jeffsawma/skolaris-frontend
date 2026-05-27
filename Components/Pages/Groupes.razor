@@ -3,128 +3,108 @@
 @inject HttpClient Http
 
 <div class="sk-page-header">
-    <h2>Gestion des groupes</h2>
-    <p>Ajouter, modifier ou supprimer les groupes associés aux programmes.</p>
+    <h2 class="sk-page-title">Gestion des groupes</h2>
+    <p class="sk-page-sub">Ajouter, modifier ou supprimer les groupes associés aux programmes.</p>
 </div>
 
-<div class="sk-card">
-    <h5>Ajouter un groupe</h5>
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="sk-alert sk-alert-warning">@message</div>
+}
 
-    <div class="sk-form-row">
-        <input class="form-control"
-               @bind="newGroupe.Nom"
-               placeholder="Nom du groupe" />
-
-        <select class="form-select" @bind="newGroupe.IdProgramme">
-            <option value="0">Choisir un programme</option>
-
-            @if (programmes != null)
-            {
-                @foreach (var p in programmes)
+<!-- Formulaire ajout -->
+<div class="sk-card" style="margin-bottom:24px;">
+    <div class="sk-section-title" style="margin-bottom:16px;">➕ Ajouter un groupe</div>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <div class="sk-form-group" style="flex:1; min-width:200px; margin:0;">
+            <label>Nom du groupe</label>
+            <input class="sk-input" @bind="newGroupe.Nom" placeholder="Ex: Groupe A" />
+        </div>
+        <div class="sk-form-group" style="flex:1; min-width:200px; margin:0;">
+            <label>Programme</label>
+            <select class="sk-input" @bind="newGroupe.IdProgramme">
+                <option value="0">Choisir un programme</option>
+                @if (programmes != null)
                 {
-                    <option value="@p.IdProgramme">@p.Nom</option>
+                    @foreach (var p in programmes)
+                    {
+                        <option value="@p.IdProgramme">@p.Nom</option>
+                    }
                 }
-            }
-        </select>
-
-        <button class="btn btn-primary" @onclick="Ajouter">
+            </select>
+        </div>
+        <button class="sk-btn sk-btn-primary" @onclick="Ajouter" style="margin-bottom:0;">
             Ajouter
         </button>
     </div>
-
-    @if (!string.IsNullOrEmpty(message))
-    {
-        <div class="alert alert-warning mt-3">
-            @message
-        </div>
-    }
 </div>
 
-<div class="sk-card mt-4">
-    <h5>Liste des groupes</h5>
-
+<!-- Liste des groupes -->
+<div class="sk-card">
+    <div class="sk-section-title" style="margin-bottom:16px;">📋 Liste des groupes</div>
     @if (groupes == null)
     {
-        <p>Chargement...</p>
+        <div class="sk-loading">Chargement...</div>
     }
     else if (groupes.Count == 0)
     {
-        <p>Aucun groupe trouvé.</p>
+        <div class="sk-empty">Aucun groupe trouvé.</div>
     }
     else
     {
-        <table class="table table-striped table-hover mt-3">
-            <thead>
-                <tr>
-                    <th>Id</th>
-                    <th>Nom</th>
-                    <th>Programme</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                @foreach (var g in groupes)
-                {
+        <div class="sk-table-wrapper">
+            <table class="sk-table">
+                <thead>
                     <tr>
-                        @if (editId == g.IdGroupe)
-                        {
-                            <td>@g.IdGroupe</td>
-
-                            <td>
-                                <input class="form-control"
-                                       @bind="editGroupe.Nom" />
-                            </td>
-
-                            <td>
-                                <select class="form-select"
-                                        @bind="editGroupe.IdProgramme">
-                                    @if (programmes != null)
-                                    {
-                                        @foreach (var p in programmes)
-                                        {
-                                            <option value="@p.IdProgramme">
-                                                @p.Nom
-                                            </option>
-                                        }
-                                    }
-                                </select>
-                            </td>
-
-                            <td>
-                                <button class="btn btn-success btn-sm"
-                                        @onclick="Sauvegarder">
-                                    Save
-                                </button>
-
-                                <button class="btn btn-secondary btn-sm ms-2"
-                                        @onclick="Annuler">
-                                    Cancel
-                                </button>
-                            </td>
-                        }
-                        else
-                        {
-                            <td>@g.IdGroupe</td>
-                            <td>@g.Nom</td>
-                            <td>@GetNomProgramme(g.IdProgramme)</td>
-
-                            <td>
-                                <button class="btn btn-warning btn-sm"
-                                        @onclick="() => Modifier(g)">
-                                    Edit
-                                </button>
-
-                                <button class="btn btn-danger btn-sm ms-2"
-                                        @onclick="() => Supprimer(g.IdGroupe)">
-                                    Delete
-                                </button>
-                            </td>
-                        }
+                        <th>#</th>
+                        <th>Nom</th>
+                        <th>Programme</th>
+                        <th>Actions</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var g in groupes)
+                    {
+                        <tr>
+                            @if (editId == g.IdGroupe)
+                            {
+                                <td>@g.IdGroupe</td>
+                                <td>
+                                    <input class="sk-input" style="padding:4px 8px;" @bind="editGroupe.Nom" />
+                                </td>
+                                <td>
+                                    <select class="sk-input" style="padding:4px 8px;" @bind="editGroupe.IdProgramme">
+                                        @if (programmes != null)
+                                        {
+                                            @foreach (var p in programmes)
+                                            {
+                                                <option value="@p.IdProgramme">@p.Nom</option>
+                                            }
+                                        }
+                                    </select>
+                                </td>
+                                <td class="sk-actions">
+                                    <button class="sk-btn sk-btn-sm sk-btn-primary" @onclick="Sauvegarder">✔ Sauvegarder</button>
+                                    <button class="sk-btn sk-btn-sm sk-btn-outline" @onclick="Annuler">Annuler</button>
+                                </td>
+                            }
+                            else
+                            {
+                                <td style="color:#888; font-size:0.85rem;">@g.IdGroupe</td>
+                                <td><strong>@g.Nom</strong></td>
+                                <td>
+                                    <span class="sk-badge sk-badge-info" style="font-size:0.8rem;">@GetNomProgramme(g.IdProgramme)</span>
+                                </td>
+                                <td class="sk-actions">
+                                    <button class="sk-btn sk-btn-sm sk-btn-outline" @onclick="() => Modifier(g)">Modifier</button>
+                                    <button class="sk-btn sk-btn-sm sk-btn-danger" @onclick="() => Supprimer(g.IdGroupe)">Supprimer</button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     }
 </div>
 

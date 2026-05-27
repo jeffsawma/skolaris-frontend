@@ -107,6 +107,18 @@ else
             <div class="sk-action-desc">Consulter et gérer les absences</div>
         </div>
 
+        <div class="sk-action-card" @onclick="GoMessagerie">
+            <div class="sk-action-icon">💬</div>
+            <div class="sk-action-title">Messagerie</div>
+            <div class="sk-action-desc">Conversations internes entre utilisateurs</div>
+        </div>
+
+        <div class="sk-action-card" @onclick="GoSms">
+            <div class="sk-action-icon">📲</div>
+            <div class="sk-action-title">Envoi SMS</div>
+            <div class="sk-action-desc">Contacter des utilisateurs par SMS d&apos;urgence</div>
+        </div>
+
     </div>
 }
 
@@ -140,6 +152,8 @@ else
     private void GoCours() => Navigation.NavigateTo("/admin/cours/create");
     private void GoInscriptions() => Navigation.NavigateTo("/inscriptions");
     private void GoAbsences() => Navigation.NavigateTo("/admin/absences");
+    private void GoMessagerie() => Navigation.NavigateTo("/messagerie");
+    private void GoSms() => Navigation.NavigateTo("/admin/sms");
 
     public class DashboardStats
     {

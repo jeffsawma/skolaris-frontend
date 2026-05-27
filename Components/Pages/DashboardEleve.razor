@@ -38,6 +38,11 @@
         <div class="sk-action-title">Mes absences</div>
         <div class="sk-action-desc">Consulter mon historique de présences</div>
     </div>
+    <div class="sk-action-card" @onclick="GoMessagerie">
+        <div class="sk-action-icon">💬</div>
+        <div class="sk-action-title">Messagerie</div>
+        <div class="sk-action-desc">Envoyer et recevoir des messages</div>
+    </div>
 </div>
 
 @code {
@@ -64,4 +69,5 @@
     private void GoDossier() => Navigation.NavigateTo("/dossier-academique");
     private void GoAbsences() => Navigation.NavigateTo("/eleve/absences");
     private void GoNotes() => Navigation.NavigateTo("/eleve/notes");
+    private void GoMessagerie() => Navigation.NavigateTo("/messagerie");
 }

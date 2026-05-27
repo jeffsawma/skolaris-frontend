@@ -7,7 +7,6 @@
 
 <div class="sk-page-header">
     <h2 class="sk-page-title">Établissements scolaires</h2>
-    <button class="sk-btn sk-btn-primary" @onclick="OpenCreate">+ Nouvel établissement</button>
 </div>
 
 @if (!string.IsNullOrEmpty(message))
@@ -52,10 +51,6 @@ else
                         </td>
                         <td class="sk-actions">
                             <button class="sk-btn sk-btn-sm sk-btn-outline" @onclick="() => OpenEdit(e)">Modifier</button>
-                            <button class="sk-btn sk-btn-sm @(e.IsActive ? "sk-btn-warning" : "sk-btn-success")"
-                                    @onclick="() => ToggleActive(e.Id)">
-                                @(e.IsActive ? "Désactiver" : "Activer")
-                            </button>
                         </td>
                     </tr>
                 }
