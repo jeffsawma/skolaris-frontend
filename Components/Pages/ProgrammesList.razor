@@ -59,11 +59,28 @@ else
                     @foreach (var p in programmes)
                     {
                         <tr>
-                            <td><strong>@p.Nom</strong></td>
-                            <td>@(string.IsNullOrEmpty(p.Description) ? "—" : p.Description)</td>
-                            <td class="sk-actions">
-                                <button class="sk-btn sk-btn-sm sk-btn-danger" @onclick="() => DeleteProgramme(p.IdProgramme)">Supprimer</button>
-                            </td>
+                            @if (editId == p.IdProgramme)
+                            {
+                                <td>
+                                    <input class="sk-input" @bind="editProgramme.Nom" />
+                                </td>
+                                <td>
+                                    <input class="sk-input" @bind="editProgramme.Description" />
+                                </td>
+                                <td class="sk-actions">
+                                    <button class="sk-btn sk-btn-sm sk-btn-primary" @onclick="SaveEdit">Enregistrer</button>
+                                    <button class="sk-btn sk-btn-sm sk-btn-outline" @onclick="CancelEdit">Annuler</button>
+                                </td>
+                            }
+                            else
+                            {
+                                <td><strong>@p.Nom</strong></td>
+                                <td>@(string.IsNullOrEmpty(p.Description) ? "—" : p.Description)</td>
+                                <td class="sk-actions">
+                                    <button class="sk-btn sk-btn-sm sk-btn-outline" @onclick="() => OpenEdit(p)">Modifier</button>
+                                    <button class="sk-btn sk-btn-sm sk-btn-danger" @onclick="() => DeleteProgramme(p.IdProgramme)">Supprimer</button>
+                                </td>
+                            }
                         </tr>
                     }
                 </tbody>
@@ -81,6 +98,9 @@ else
     private string message = "";
     private bool loaded = false;
 
+    private int editId = 0;
+    private Programme editProgramme = new();
+
     protected override async Task OnInitializedAsync()
     {
         await ChargerProgrammes();
@@ -90,6 +110,40 @@ else
     private async Task ChargerProgrammes()
     {
         programmes = await Http.GetFromJsonAsync<List<Programme>>("api/Programme") ?? new();
+    }
+
+    private void OpenEdit(Programme p)
+    {
+        editId = p.IdProgramme;
+        editProgramme = new Programme
+        {
+            IdProgramme = p.IdProgramme,
+            Nom = p.Nom,
+            Description = p.Description
+        };
+    }
+
+    private void CancelEdit()
+    {
+        editId = 0;
+        editProgramme = new Programme();
+    }
+
+    private async Task SaveEdit()
+    {
+        var res = await Http.PutAsJsonAsync($"api/Programme/{editId}", editProgramme);
+
+        if (res.IsSuccessStatusCode)
+        {
+            message = "✅ Programme modifié avec succès.";
+            editId = 0;
+            editProgramme = new Programme();
+            await ChargerProgrammes();
+        }
+        else
+        {
+            message = $"❌ Erreur : {await res.Content.ReadAsStringAsync()}";
+        }
     }
 
     private async Task DeleteProgramme(int id)
