@@ -5,7 +5,6 @@
 @inject IJSRuntime JS
 
 <div class="sk-dossier-header">
-    <div class="sk-dossier-avatar" style="background:#e65c00;">📱</div>
     <div>
         <h2 class="sk-dossier-name">SMS d'urgence</h2>
         <p class="sk-dossier-sub">Administration — Contacter un ou plusieurs utilisateurs par SMS</p>
@@ -45,13 +44,22 @@
         </div>
 
         <div class="sk-section-title" style="margin-top:20px;">📞 Numéros de téléphone destinataires</div>
-        <div class="sk-form-group" style="margin-top:12px;">
+        <p style="font-size:0.85rem; color:#888; margin:6px 0 8px;">
+            Utilisez les filtres à droite pour ajouter des numéros automatiquement, ou saisissez-les manuellement.
+        </p>
+        <div class="sk-form-group" style="margin-top:4px;">
             <label>Un numéro par ligne, format international <span style="color:#e65c00;">*</span></label>
-            <textarea class="sk-input" rows="6" placeholder=" +1 514 000 0000 ;  +1 438 000 0000 " @bind="phonesRaw"
+            <textarea class="sk-input" rows="7" placeholder="+1 514 000 0000&#10;+1 438 000 0000"
+                      @bind="phonesRaw" @bind:event="oninput"
                       style="font-family:monospace; resize:vertical;"></textarea>
-            <small style="color:#888;">
-                Format requis : +[1][numéro] — ex: <strong>+1 514 000 0000</strong> (Canada)
-            </small>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                <small style="color:#888;">Format: <strong>+1 514 000 0000</strong></small>
+                @if (!string.IsNullOrWhiteSpace(phonesRaw))
+                {
+                    <button class="sk-btn sk-btn-sm sk-btn-outline" style="font-size:0.75rem; padding:2px 10px;"
+                            @onclick="ViderNumeros">Vider</button>
+                }
+            </div>
         </div>
 
         <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
@@ -64,7 +72,7 @@
                 }
                 else
                 {
-                    <span>📱 Envoyer les SMS</span>
+                    <span>📲 Envoyer les SMS</span>
                 }
             </button>
             <button class="sk-btn sk-btn-outline" @onclick="Reinitialiser">Réinitialiser</button>
@@ -111,88 +119,262 @@
         }
     </div>
 
-    <!-- Colonne droite : liste des utilisateurs (référence) -->
-    <div style="flex:1; min-width:280px;">
-        <div class="sk-section-title">👥 Annuaire utilisateurs <small
-            style="font-weight:400; color:#888;">(référence)</small></div>
-            <p style="font-size:0.85rem; color:#888; margin:6px 0 12px;">
-                Utilisez cette liste pour retrouver les utilisateurs et saisir leurs numéros à gauche.
-            </p>
+    <!-- Colonne droite : annuaire avec numéros éditables -->
+    <div style="flex:1; min-width:300px;">
+        <div class="sk-section-title">👥 Annuaire &amp; numéros</div>
+        <p style="font-size:0.85rem; color:#888; margin:6px 0 12px;">
+            Cliquez sur un filtre pour <strong>remplacer</strong> les destinataires par ce groupe. Modifiez les numéros directement dans la liste.
+        </p>
 
-            <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
-                <button class="sk-btn sk-btn-sm @(filtreRole == "" ? "sk-btn-primary" : "sk-btn-outline")"
-                        @onclick='() => filtreRole = ""'>Tous</button>
-                <button class="sk-btn sk-btn-sm @(filtreRole == "ADMIN" ? "sk-btn-primary" : "sk-btn-outline")"
-                        @onclick='() => filtreRole = "ADMIN"'>Admins</button>
-                <button class="sk-btn sk-btn-sm @(filtreRole == "ENSEIGNANT" ? "sk-btn-primary" : "sk-btn-outline")"
-                        @onclick='() => filtreRole = "ENSEIGNANT"'>Enseignants</button>
-                <button class="sk-btn sk-btn-sm @(filtreRole == "ELEVE" ? "sk-btn-primary" : "sk-btn-outline")"
-                        @onclick='() => filtreRole = "ELEVE"'>Élèves</button>
-            </div>
-
-            @if (!utilisateursCharges)
-            {
-                <div class="sk-loading">Chargement...</div>
-            }
-            else
-            {
-                <div class="sk-table-wrapper" style="max-height:480px; overflow-y:auto;">
-                    <table class="sk-table">
-                        <thead>
-                            <tr>
-                                <th>Nom</th>
-                                <th>Courriel</th>
-                                <th>Rôle</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var u in UtilisateursFiltres)
-                            {
-                                <tr>
-                                    <td><strong>@u.Nom</strong></td>
-                                    <td style="font-size:0.85rem;">@u.Email</td>
-                                    <td><span class="sk-badge @GetRoleClass(u.Role)" style="font-size:0.75rem;">@u.Role</span></td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-                <small style="color:#888;">@UtilisateursFiltres.Count utilisateur(s) affiché(s)</small>
-            }
+        <!-- Filtres / ajout rapide -->
+        <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+            <button class="sk-btn sk-btn-sm @(filtreRole == "" && filtreGroupeId == null ? "sk-btn-primary" : "sk-btn-outline")"
+                    @onclick='() => AppliquerFiltre("")'>Tous</button>
+            <button class="sk-btn sk-btn-sm @(filtreRole == "ADMIN" ? "sk-btn-primary" : "sk-btn-outline")"
+                    @onclick='() => AppliquerFiltre("ADMIN")'>Admins</button>
+            <button class="sk-btn sk-btn-sm @(filtreRole == "ENSEIGNANT" ? "sk-btn-primary" : "sk-btn-outline")"
+                    @onclick='() => AppliquerFiltre("ENSEIGNANT")'>Enseignants</button>
+            <button class="sk-btn sk-btn-sm @(filtreRole == "ELEVE" && filtreGroupeId == null ? "sk-btn-primary" : "sk-btn-outline")"
+                    @onclick='() => AppliquerFiltre("ELEVE")'>Élèves</button>
+            <button class="sk-btn sk-btn-sm @(filtreGroupeId != null ? "sk-btn-primary" : "")"
+                    style="@(filtreGroupeId == null ? "background:#fff; border:2px solid #ccc; color:#333;" : "")"
+                    @onclick="MontrerGroupeSelect">👨‍🎓 Groupe élèves</button>
         </div>
-    </div>
 
-    <div class="mt-4" style="margin-top:32px;">
-        <button class="sk-btn sk-btn-outline" @onclick='() => Navigation.NavigateTo("/dashboard-admin")'>
-            ← Retour au tableau de bord
-        </button>
+        @if (showGroupeSelect)
+        {
+            <div style="margin-bottom:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <select class="sk-input" style="max-width:220px; padding:6px 10px;"
+                        @onchange="OnGroupeChange">
+                    <option value="">-- Sélectionner un groupe --</option>
+                    @foreach (var g in groupes)
+                    {
+                        <option value="@g.IdGroupe" selected="@(filtreGroupeId == g.IdGroupe)">@g.Nom</option>
+                    }
+                </select>
+                <button class="sk-btn sk-btn-sm sk-btn-outline" @onclick="AnnulerGroupeFiltre">✕ Annuler</button>
+            </div>
+        }
+        @if (nbAjoutés > 0)
+        {
+            <div style="font-size:0.82rem; color:#2ecc71; margin-bottom:8px;">
+                ✅ @nbAjoutés numéro(s) ajouté(s) dans le champ destinataires.
+            </div>
+        }
+
+        @if (!utilisateursCharges)
+        {
+            <div class="sk-loading">Chargement...</div>
+        }
+        else
+        {
+            <div class="sk-table-wrapper" style="max-height:520px; overflow-y:auto;">
+                <table class="sk-table">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Rôle</th>
+                            <th>Téléphone</th>
+                            <th style="width:70px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in UtilisateursFiltres)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@u.Nom</strong>
+                                    <div style="font-size:0.78rem; color:#888;">@u.Email</div>
+                                </td>
+                                <td>
+                                    <span class="sk-badge @GetRoleClass(u.Role)" style="font-size:0.75rem;">@u.Role</span>
+                                </td>
+                                <td>
+                                    @if (editTelId == u.Id)
+                                    {
+                                        <input class="sk-input" style="padding:3px 6px; font-size:0.85rem; width:140px;"
+                                               @bind="editTelValue" placeholder="+1 514 000 0000" />
+                                    }
+                                    else
+                                    {
+                                        <span style="font-family:monospace; font-size:0.85rem;">
+                                            @(string.IsNullOrEmpty(u.Telephone) ? "—" : u.Telephone)
+                                        </span>
+                                    }
+                                </td>
+                                <td style="white-space:nowrap;">
+                                    @if (editTelId == u.Id)
+                                    {
+                                        <button class="sk-btn sk-btn-sm sk-btn-primary" style="padding:2px 8px;"
+                                                @onclick="() => SauvegarderTel(u)">✔</button>
+                                        <button class="sk-btn sk-btn-sm sk-btn-outline" style="padding:2px 6px; margin-left:2px;"
+                                                @onclick="AnnulerEditTel">✕</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="sk-btn sk-btn-sm sk-btn-outline" style="padding:2px 8px;"
+                                                title="Modifier le numéro"
+                                                @onclick="() => DemarrerEditTel(u)">✏️</button>
+                                        @if (!string.IsNullOrEmpty(u.Telephone))
+                                        {
+                                            <button class="sk-btn sk-btn-sm sk-btn-outline" style="padding:2px 6px; margin-left:2px;"
+                                                    title="Ajouter ce numéro aux destinataires"
+                                                    @onclick="() => AjouterUnNumero(u.Telephone!)">+</button>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <small style="color:#888;">@UtilisateursFiltres.Count utilisateur(s) affiché(s)</small>
+        }
     </div>
+</div>
+
+<div class="mt-4" style="margin-top:32px;">
+    <button class="sk-btn sk-btn-outline" @onclick='() => Navigation.NavigateTo("/dashboard-admin")'>
+        ← Retour au tableau de bord
+    </button>
+</div>
 
 @code {
     private string message = "";
     private string phonesRaw = "";
     private string filtreRole = "";
+    private int? filtreGroupeId = null;
+    private bool showGroupeSelect = false;
     private bool envoi = false;
     private bool utilisateursCharges = false;
     private string successMessage = "";
     private string errorMessage = "";
+    private int nbAjoutés = 0;
+
+    private int editTelId = -1;
+    private string editTelValue = "";
 
     private List<UtilisateurRef> utilisateurs = new();
+    private List<UtilisateurRef> elevesDuGroupe = new();
+    private List<GroupeRef> groupes = new();
     private List<SmsResultItem> resultats = new();
 
     private List<UtilisateurRef> UtilisateursFiltres =>
-        string.IsNullOrEmpty(filtreRole)
-            ? utilisateurs
-            : utilisateurs.Where(u => u.Role == filtreRole).ToList();
+        filtreGroupeId != null
+            ? elevesDuGroupe
+            : string.IsNullOrEmpty(filtreRole)
+                ? utilisateurs
+                : utilisateurs.Where(u => u.Role == filtreRole).ToList();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             utilisateurs = await Http.GetFromJsonAsync<List<UtilisateurRef>>("api/users") ?? new();
+            groupes = await Http.GetFromJsonAsync<List<GroupeRef>>("api/Groupes") ?? new();
             utilisateursCharges = true;
             StateHasChanged();
         }
+    }
+
+    private void AppliquerFiltre(string role)
+    {
+        filtreRole = role;
+        filtreGroupeId = null;
+        showGroupeSelect = false;
+        elevesDuGroupe = new();
+        nbAjoutés = 0;
+
+        var phones = (string.IsNullOrEmpty(role) ? utilisateurs : utilisateurs.Where(u => u.Role == role))
+            .Where(u => !string.IsNullOrWhiteSpace(u.Telephone))
+            .Select(u => u.Telephone!.Trim())
+            .Distinct()
+            .ToList();
+
+        phonesRaw = string.Join("\n", phones);
+        nbAjoutés = phones.Count;
+    }
+
+    private void MontrerGroupeSelect()
+    {
+        showGroupeSelect = !showGroupeSelect;
+    }
+
+    private async Task OnGroupeChange(ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out int gid)) return;
+        filtreGroupeId = gid;
+        filtreRole = "";
+        nbAjoutés = 0;
+        phonesRaw = "";
+
+        elevesDuGroupe = await Http.GetFromJsonAsync<List<UtilisateurRef>>($"api/users/by-groupe/{gid}") ?? new();
+
+        var phones = elevesDuGroupe
+            .Where(u => !string.IsNullOrWhiteSpace(u.Telephone))
+            .Select(u => u.Telephone!.Trim())
+            .Distinct()
+            .ToList();
+
+        phonesRaw = string.Join("\n", phones);
+        nbAjoutés = phones.Count;
+        StateHasChanged();
+    }
+
+    private void AnnulerGroupeFiltre()
+    {
+        filtreGroupeId = null;
+        showGroupeSelect = false;
+        elevesDuGroupe = new();
+        filtreRole = "";
+        phonesRaw = "";
+        nbAjoutés = 0;
+    }
+
+    private void AjouterUnNumero(string telephone)
+    {
+        var tel = telephone.Trim();
+        var existants = phonesRaw
+            .Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(p => p.Trim())
+            .ToHashSet();
+
+        if (!existants.Contains(tel))
+            phonesRaw = (string.IsNullOrWhiteSpace(phonesRaw) ? "" : phonesRaw.TrimEnd() + "\n") + tel;
+    }
+
+    private void ViderNumeros()
+    {
+        phonesRaw = "";
+        nbAjoutés = 0;
+    }
+
+    private void DemarrerEditTel(UtilisateurRef u)
+    {
+        editTelId = u.Id;
+        editTelValue = u.Telephone ?? "";
+    }
+
+    private void AnnulerEditTel()
+    {
+        editTelId = -1;
+        editTelValue = "";
+    }
+
+    private async Task SauvegarderTel(UtilisateurRef u)
+    {
+        var body = new { telephone = string.IsNullOrWhiteSpace(editTelValue) ? (string?)null : editTelValue.Trim() };
+        try
+        {
+            var resp = await Http.PatchAsJsonAsync($"api/users/{u.Id}/telephone", body);
+            if (resp.IsSuccessStatusCode)
+            {
+                u.Telephone = body.telephone;
+            }
+        }
+        catch { }
+        editTelId = -1;
+        editTelValue = "";
     }
 
     private async Task EnvoyerSms()
@@ -253,6 +435,12 @@
         resultats = new();
         successMessage = "";
         errorMessage = "";
+        nbAjoutés = 0;
+        filtreRole = "";
+        filtreGroupeId = null;
+        showGroupeSelect = false;
+        elevesDuGroupe = new();
+        editTelId = -1;
     }
 
     private string GetRoleClass(string role) => role switch
@@ -270,6 +458,7 @@
         public string Email { get; set; } = "";
         public string Role { get; set; } = "";
         public bool IsActive { get; set; }
+        public string? Telephone { get; set; }
     }
 
     private class SmsResultItem
@@ -278,4 +467,11 @@
         public bool Success { get; set; }
         public string Error { get; set; } = "";
     }
+
+    private class GroupeRef
+    {
+        public int IdGroupe { get; set; }
+        public string Nom { get; set; } = "";
+    }
 }
+

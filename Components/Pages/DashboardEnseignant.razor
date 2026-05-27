@@ -38,10 +38,10 @@
         <div class="sk-action-title">Statistiques de classe</div>
         <div class="sk-action-desc">Moyenne, médiane et distribution par cours</div>
     </div>
-    <div class="sk-action-card sk-action-card-soon">
+    <div class="sk-action-card" @onclick="GoMessagerie">
         <div class="sk-action-icon">💬</div>
         <div class="sk-action-title">Messagerie</div>
-        <div class="sk-action-desc coming-soon">Bientôt disponible</div>
+        <div class="sk-action-desc">Conversations avec élèves et collègues</div>
     </div>
 </div>
 
@@ -69,5 +69,6 @@
     private void GoAbsences() => Navigation.NavigateTo("/enseignant/absences");
     private void GoNotes() => Navigation.NavigateTo("/enseignant/notes");
     private void GoStatistiques() => Navigation.NavigateTo("/enseignant/statistiques");
+    private void GoMessagerie() => Navigation.NavigateTo("/messagerie");
     private void GoHoraire() => Navigation.NavigateTo("/enseignant/emploi-du-temps");
 }
