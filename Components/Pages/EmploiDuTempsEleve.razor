@@ -1,3 +1,5 @@
+Voici EmploiDuTempsEleve.razor complet avec les textes ajustés pour les inscriptions :
+
 @page "/eleve/emploi-du-temps"
 @rendermode InteractiveServer
 @inject HttpClient Http
@@ -5,7 +7,7 @@
 @using System.Net.Http.Json
 
 <h3>Mon emploi du temps</h3>
-<p class="text-muted">Vos créneaux de la semaine selon votre groupe.</p>
+<p class="text-muted">Vos créneaux de la semaine selon vos inscriptions.</p>
 
 @if (creneaux == null)
 {
@@ -13,7 +15,7 @@
 }
 else if (!creneaux.Any())
 {
-    <div class="alert alert-info">Aucun créneau publié pour votre groupe pour le moment.</div>
+    <div class="alert alert-info">Aucun créneau publié pour vos inscriptions pour le moment.</div>
 }
 else
 {
@@ -151,13 +153,11 @@ else
         {
             try
             {
-                // Essaye idUtilisateur
                 var eleveId = await JS.InvokeAsync<string>(
                     "localStorage.getItem",
                     "idUtilisateur"
                 );
 
-                // Fallback userId
                 if (string.IsNullOrEmpty(eleveId))
                 {
                     eleveId = await JS.InvokeAsync<string>(
@@ -180,8 +180,6 @@ else
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-
-                // évite loading infini
                 creneaux = new();
             }
 
@@ -235,17 +233,11 @@ else
     public class CreneauDto
     {
         public int Id { get; set; }
-
         public string CoursNom { get; set; } = "";
-
         public string EnseignantNom { get; set; } = "";
-
         public string JourSemaine { get; set; } = "";
-
         public string HeureDebut { get; set; } = "";
-
         public string HeureFin { get; set; } = "";
-
         public string? Salle { get; set; }
     }
 }

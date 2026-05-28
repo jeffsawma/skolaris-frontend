@@ -30,10 +30,10 @@ else
         <div style="margin-bottom:12px;">
             <div @onclick="() => ToggleProgramme(group.Key)"
                  style="cursor:pointer; display:flex; align-items:center; justify-content:space-between;
-                                 padding:14px 18px; background:var(--sk-surface,#fff);
-                                 border:1px solid var(--sk-border,#e2e8f0);
-                                 border-radius:@(isOpen ? "8px 8px 0 0" : "8px");
-                                 user-select:none;">
+                                padding:14px 18px; background:var(--sk-surface,#fff);
+                                border:1px solid var(--sk-border,#e2e8f0);
+                                border-radius:@(isOpen ? "8px 8px 0 0" : "8px");
+                                user-select:none;">
 
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span style="font-size:1.2em;">📘</span>
@@ -361,13 +361,13 @@ else
         editId = co.IdCoursOffert;
 
         form = new CoursOffertFormDto
-        {
-            IdCours = co.IdCours,
-            IdSession = co.IdSession,
-            IdGroupe = co.IdGroupe,
-            IdEnseignant = co.IdEnseignant,
-            ModeEnseignement = co.ModeEnseignement
-        };
+            {
+                IdCours = co.IdCours,
+                IdSession = co.IdSession,
+                IdGroupe = co.IdGroupe,
+                IdEnseignant = co.IdEnseignant,
+                ModeEnseignement = co.ModeEnseignement
+            };
 
         formError = "";
         showForm = true;
@@ -449,7 +449,6 @@ else
         }
 
         showForm = false;
-
         await Charger();
     }
 
@@ -459,11 +458,19 @@ else
 
         isError = !res.IsSuccessStatusCode;
 
-        message = isError
-            ? "Erreur lors de la suppression."
-            : "Cours offert supprimé.";
+        if (res.IsSuccessStatusCode)
+        {
+            message = "Cours offert supprimé.";
+            await Charger();
+        }
+        else
+        {
+            var erreur = await res.Content.ReadAsStringAsync();
 
-        await Charger();
+            message = string.IsNullOrWhiteSpace(erreur)
+                ? "Impossible de supprimer ce cours offert."
+                : erreur;
+        }
     }
 
     static string GetModeLabel(string mode) => mode switch
