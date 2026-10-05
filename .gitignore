@@ -4,3 +4,9 @@ obj/
 node_modules/
 dist/
 .env
+
+# Visual Studio user-specific files
+*.user
+
+# Visual Studio user-specific files
+*.user
